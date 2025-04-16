@@ -1,5 +1,6 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle } from "lucide-react";
 
 interface LoadingScreenProps {
   message?: string;
@@ -27,6 +28,14 @@ const LoadingScreen = ({ message = "Loading..." }: LoadingScreenProps) => {
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-4/5 mx-auto" />
             <Skeleton className="h-4 w-2/3 mx-auto" />
+          </div>
+          
+          <div className="mt-6 w-full max-w-md bg-yellow-100 border-l-4 border-yellow-500 p-4 flex items-center">
+            <AlertTriangle className="h-6 w-6 text-yellow-600 mr-3" />
+            <p className="text-yellow-800 text-sm">
+              This webpage does not work on the PDSB Media Network. 
+              Please switch to PDSB WiFi or use Mobile Data where possible.
+            </p>
           </div>
         </div>
       </div>
