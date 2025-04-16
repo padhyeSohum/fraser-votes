@@ -1,17 +1,17 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash, Edit, BarChart2, Settings, Users, UserCheck } from "lucide-react";
+import { Plus, Trash, Edit, BarChart2, Settings, Users, UserCheck, Key } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
-import { Position, Candidate } from "@/types";
+import { Position, Candidate, PinAccess } from "@/types";
+import { v4 as uuidv4 } from 'uuid';
 
 // Components
 import Header from "@/components/Header";
@@ -39,6 +39,7 @@ const Admin = () => {
   const [isAddPositionOpen, setIsAddPositionOpen] = useState(false);
   const [isAddCandidateOpen, setIsAddCandidateOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [results, setResults] = useState<Record<string, Candidate[]>>({});
   
   // Form states
@@ -59,6 +60,12 @@ const Admin = () => {
     pinCode: settings.pinCode,
     title: settings.title,
     allowMultipleVotes: settings.allowMultipleVotes
+  });
+
+  const [newPin, setNewPin] = useState<Omit<PinAccess, "id" | "createdAt">>({
+    name: "",
+    pin: "",
+    isActive: true
   });
   
   const navigate = useNavigate();
@@ -98,6 +105,55 @@ const Admin = () => {
   const handleUpdateSettings = async () => {
     await updateSettings(newSettings);
     setIsSettingsOpen(false);
+  };
+
+  const handleAddPin = () => {
+    if (!newPin.name || !newPin.pin) return;
+    
+    // Create a copy of pins array or initialize if not exists
+    const updatedPins = [...(settings.pins || [])];
+    
+    // Add new pin
+    updatedPins.push({
+      id: uuidv4(),
+      ...newPin
+    });
+    
+    // Update settings with new pins
+    updateSettings({ 
+      ...settings, 
+      pins: updatedPins
+    });
+    
+    // Reset form
+    setNewPin({
+      name: "",
+      pin: "",
+      isActive: true
+    });
+  };
+
+  const handleRemovePin = (pinId: string) => {
+    if (!settings.pins) return;
+    
+    const updatedPins = settings.pins.filter(pin => pin.id !== pinId);
+    updateSettings({ 
+      ...settings, 
+      pins: updatedPins
+    });
+  };
+
+  const handleTogglePinStatus = (pinId: string) => {
+    if (!settings.pins) return;
+    
+    const updatedPins = settings.pins.map(pin => 
+      pin.id === pinId ? { ...pin, isActive: !pin.isActive } : pin
+    );
+    
+    updateSettings({ 
+      ...settings, 
+      pins: updatedPins
+    });
   };
   
   const handleFetchResults = async () => {
@@ -145,12 +201,15 @@ const Admin = () => {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="pinCode">PIN Code</Label>
+                    <Label htmlFor="pinCode">Legacy PIN Code</Label>
                     <Input
                       id="pinCode"
                       value={newSettings.pinCode}
                       onChange={(e) => setNewSettings({...newSettings, pinCode: e.target.value})}
                     />
+                    <p className="text-xs text-gray-500">
+                      For backward compatibility. Use PIN management for new codes.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="title">Election Title</Label>
@@ -172,6 +231,98 @@ const Admin = () => {
                 <DialogFooter>
                   <Button onClick={handleUpdateSettings}>Save Changes</Button>
                 </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Key className="h-4 w-4 mr-2" />
+                  Manage Pins
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>PIN Access Management</DialogTitle>
+                  <DialogDescription>
+                    Create and manage access PINs for voting
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                  {/* Current PINs */}
+                  <div>
+                    <h3 className="text-lg font-medium mb-3">Active Access Codes</h3>
+                    {settings.pins && settings.pins.length > 0 ? (
+                      <div className="space-y-2">
+                        {settings.pins.map((pin) => (
+                          <div key={pin.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                            <div>
+                              <p className="font-medium">{pin.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm text-gray-500">PIN: {pin.pin}</p>
+                                <span className={`inline-flex h-2 w-2 rounded-full ${pin.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                <p className="text-xs text-gray-500">{pin.isActive ? 'Active' : 'Inactive'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleTogglePinStatus(pin.id)}
+                              >
+                                {pin.isActive ? 'Disable' : 'Enable'}
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleRemovePin(pin.id)}
+                              >
+                                <Trash className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">No access PINs defined yet</p>
+                    )}
+                  </div>
+
+                  {/* Add new PIN */}
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-medium mb-3">Add New Access Code</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="pin-name">Name/Group</Label>
+                        <Input
+                          id="pin-name"
+                          placeholder="e.g., Grade 10 Students"
+                          value={newPin.name}
+                          onChange={(e) => setNewPin({...newPin, name: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="pin-code">PIN Code</Label>
+                        <Input
+                          id="pin-code"
+                          placeholder="e.g., 1234"
+                          value={newPin.pin}
+                          onChange={(e) => setNewPin({...newPin, pin: e.target.value})}
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button 
+                          onClick={handleAddPin}
+                          disabled={!newPin.name || !newPin.pin}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add PIN
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </DialogContent>
             </Dialog>
           </div>

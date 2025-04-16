@@ -38,15 +38,25 @@ export interface Student {
   hasVoted: boolean;
 }
 
+// Pin access code
+export interface PinAccess {
+  id: string;
+  name: string;
+  pin: string;
+  isActive: boolean;
+  createdAt?: Date;
+}
+
 // Election settings
 export interface ElectionSettings {
   isActive: boolean;
-  pinCode: string;
+  pinCode: string;  // Keep for backward compatibility
   startTime?: Date;
   endTime?: Date;
   title: string;
   description?: string;
   allowMultipleVotes: boolean;
+  pins?: PinAccess[];  // New field for multiple pins
 }
 
 // Vote record

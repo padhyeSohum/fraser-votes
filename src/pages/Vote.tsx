@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -16,16 +17,34 @@ const Vote = () => {
   const [selectedCandidates, setSelectedCandidates] = useState<Record<string, string>>({});
   const [hasVoted, setHasVoted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pinError, setPinError] = useState("");
   
   const isVotingActive = settings.isActive;
 
   const handlePinSubmit = () => {
+    // Clear any previous errors
+    setPinError("");
+    
+    // Check legacy pin first for backward compatibility
     if (enteredPin === settings.pinCode) {
       setIsPinCorrect(true);
-    } else {
-      setIsPinCorrect(false);
-      alert("Incorrect PIN. Please try again.");
+      return;
     }
+    
+    // Then check the pins array
+    if (settings.pins && settings.pins.length > 0) {
+      const validPin = settings.pins.find(
+        p => p.pin === enteredPin && p.isActive
+      );
+      
+      if (validPin) {
+        setIsPinCorrect(true);
+        return;
+      }
+    }
+    
+    // If we get here, pin was invalid
+    setPinError("Incorrect PIN. Please try again.");
   };
   
   const selectCandidate = (positionId: string, candidateId: string) => {
@@ -138,6 +157,9 @@ const Vote = () => {
                 className="text-center text-xl tracking-widest"
                 maxLength={6}
               />
+              {pinError && (
+                <p className="text-red-500 text-sm mt-2">{pinError}</p>
+              )}
             </CardContent>
             <CardFooter>
               <Button 
