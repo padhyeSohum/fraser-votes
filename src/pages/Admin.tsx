@@ -32,8 +32,7 @@ const Admin = () => {
     updateSettings,
     startElection,
     endElection,
-    getResults,
-    initializeData
+    getResults
   } = useElection();
   
   const [currentTab, setCurrentTab] = useState("candidates");
@@ -114,16 +113,6 @@ const Admin = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Admin Panel</h1>
           <div className="flex items-center gap-4">
-            {isSuperAdmin && (
-              <Button 
-                variant="outline" 
-                onClick={initializeData}
-                className="mr-2"
-              >
-                Initialize Demo Data
-              </Button>
-            )}
-            
             {settings.isActive ? (
               <Button 
                 variant="destructive" 

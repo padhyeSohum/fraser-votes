@@ -17,7 +17,6 @@ import {
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
 import { Candidate, Position, Student, ElectionSettings, Vote } from "@/types";
-import { initializeMockData } from "@/lib/mockData";
 import { v4 as uuidv4 } from 'uuid';
 
 interface ElectionContextType {
@@ -52,9 +51,6 @@ interface ElectionContextType {
   // Voting methods
   submitVote: (votes: Omit<Vote, "id" | "timestamp">[]) => Promise<void>;
   getResults: () => Promise<Record<string, Candidate[]>>;
-  
-  // Database initialization
-  initializeData: () => Promise<boolean>;
 }
 
 const ElectionContext = createContext<ElectionContextType | null>(null);
@@ -1150,137 +1146,6 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const initializeData = async (): Promise<boolean> => {
-    try {
-      if (offlineMode) {
-        const mockData = {
-          positions: [
-            { id: uuidv4(), title: "President", description: "Student body president", order: 1 },
-            { id: uuidv4(), title: "Vice President", description: "Assists the president", order: 2 },
-            { id: uuidv4(), title: "Secretary", description: "Handles administrative tasks", order: 3 }
-          ],
-          candidates: [
-            { id: uuidv4(), name: "John Smith", position: "1", description: "Grade 12 student", votes: 0, photoURL: "" },
-            { id: uuidv4(), name: "Jane Doe", position: "1", description: "Grade 11 student", votes: 0, photoURL: "" },
-            { id: uuidv4(), name: "Bob Johnson", position: "2", description: "Grade 12 student", votes: 0, photoURL: "" },
-            { id: uuidv4(), name: "Sarah Williams", position: "2", description: "Grade 10 student", votes: 0, photoURL: "" },
-            { id: uuidv4(), name: "Mike Davis", position: "3", description: "Grade 11 student", votes: 0, photoURL: "" }
-          ],
-          students: [
-            { id: uuidv4(), name: "Student 1", studentId: "S001", grade: 9, checkedIn: false, hasVoted: false },
-            { id: uuidv4(), name: "Student 2", studentId: "S002", grade: 10, checkedIn: false, hasVoted: false },
-            { id: uuidv4(), name: "Student 3", studentId: "S003", grade: 11, checkedIn: false, hasVoted: false }
-          ],
-          settings: {
-            isActive: false,
-            pinCode: "1234",
-            title: "School Election Demo",
-            allowMultipleVotes: false
-          }
-        };
-        
-        const positionMap = new Map();
-        mockData.positions.forEach(p => positionMap.set(p.order, p.id));
-        
-        mockData.candidates.forEach(c => {
-          if (c.position === "1") c.position = positionMap.get(1);
-          if (c.position === "2") c.position = positionMap.get(2);
-          if (c.position === "3") c.position = positionMap.get(3);
-        });
-        
-        setPositions(mockData.positions);
-        setCandidates(mockData.candidates);
-        setStudents(mockData.students);
-        setSettings(mockData.settings);
-        
-        saveToLocalStorage('positions', mockData.positions);
-        saveToLocalStorage('candidates', mockData.candidates);
-        saveToLocalStorage('students', mockData.students);
-        saveToLocalStorage('settings', mockData.settings);
-        
-        toast({
-          title: "Success (Offline Mode)",
-          description: "Demo data initialized successfully",
-        });
-        return true;
-      }
-      
-      const result = await initializeMockData();
-      if (result) {
-        toast({
-          title: "Success",
-          description: "Demo data initialized successfully",
-        });
-      }
-      return result;
-    } catch (err: any) {
-      console.error("Error initializing data:", err);
-      
-      if (err.code === "permission-denied") {
-        setOfflineMode(true);
-        
-        const mockData = {
-          positions: [
-            { id: uuidv4(), title: "President", description: "Student body president", order: 1 },
-            { id: uuidv4(), title: "Vice President", description: "Assists the president", order: 2 },
-            { id: uuidv4(), title: "Secretary", description: "Handles administrative tasks", order: 3 }
-          ],
-          candidates: [
-            { id: uuidv4(), name: "John Smith", position: "1", description: "Grade 12 student", votes: 0, photoURL: "" },
-            { id: uuidv4(), name: "Jane Doe", position: "1", description: "Grade 11 student", votes: 0, photoURL: "" },
-            { id: uuidv4(), name: "Bob Johnson", position: "2", description: "Grade 12 student", votes: 0, photoURL: "" },
-            { id: uuidv4(), name: "Sarah Williams", position: "2", description: "Grade 10 student", votes: 0, photoURL: "" },
-            { id: uuidv4(), name: "Mike Davis", position: "3", description: "Grade 11 student", votes: 0, photoURL: "" }
-          ],
-          students: [
-            { id: uuidv4(), name: "Student 1", studentId: "S001", grade: 9, checkedIn: false, hasVoted: false },
-            { id: uuidv4(), name: "Student 2", studentId: "S002", grade: 10, checkedIn: false, hasVoted: false },
-            { id: uuidv4(), name: "Student 3", studentId: "S003", grade: 11, checkedIn: false, hasVoted: false }
-          ],
-          settings: {
-            isActive: false,
-            pinCode: "1234",
-            title: "School Election Demo",
-            allowMultipleVotes: false
-          }
-        };
-        
-        const positionMap = new Map();
-        mockData.positions.forEach(p => positionMap.set(p.order, p.id));
-        
-        mockData.candidates.forEach(c => {
-          if (c.position === "1") c.position = positionMap.get(1);
-          if (c.position === "2") c.position = positionMap.get(2);
-          if (c.position === "3") c.position = positionMap.get(3);
-        });
-        
-        setPositions(mockData.positions);
-        setCandidates(mockData.candidates);
-        setStudents(mockData.students);
-        setSettings(mockData.settings);
-        
-        saveToLocalStorage('positions', mockData.positions);
-        saveToLocalStorage('candidates', mockData.candidates);
-        saveToLocalStorage('students', mockData.students);
-        saveToLocalStorage('settings', mockData.settings);
-        
-        toast({
-          title: "Limited Access Mode",
-          description: "Demo data initialized successfully (local only)",
-        });
-        return true;
-      }
-      
-      setError(err.message);
-      toast({
-        title: "Error",
-        description: `Failed to initialize data: ${err.message}`,
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
-
   const value: ElectionContextType = {
     candidates,
     positions,
@@ -1302,8 +1167,7 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     startElection,
     endElection,
     submitVote,
-    getResults,
-    initializeData
+    getResults
   };
 
   return (
