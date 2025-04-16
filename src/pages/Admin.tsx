@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash, Edit, BarChart2, Settings, Users, UserCheck, Key, UserPlus } from "lucide-react";
+import { Plus, Trash, Edit, BarChart2, Settings, Users, UserCheck, Key, UserPlus, Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { Position, Candidate, PinAccess } from "@/types";
@@ -19,7 +19,7 @@ import StudentManagement from "@/components/admin/StudentManagement";
 import UserManagement from "@/components/admin/UserManagement";
 
 const Admin = () => {
-  const { userData } = useAuth();
+  const { userData, isSuperAdmin } = useAuth();
   const { 
     positions, 
     candidates, 
@@ -68,8 +68,6 @@ const Admin = () => {
   });
   
   const navigate = useNavigate();
-  
-  const isSuperAdmin = userData?.role === "superadmin";
   
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -314,11 +312,13 @@ const Admin = () => {
               <UserPlus className="h-4 w-4" />
               Students
             </TabsTrigger>
-            <TabsTrigger value="results" className="flex items-center gap-2">
-              <BarChart2 className="h-4 w-4" />
-              Results
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2" disabled={!isSuperAdmin}>
+            {isSuperAdmin() && (
+              <TabsTrigger value="results" className="flex items-center gap-2">
+                <BarChart2 className="h-4 w-4" />
+                Results
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="users" className="flex items-center gap-2">
               <UserCheck className="h-4 w-4" />
               User Access
             </TabsTrigger>
@@ -535,83 +535,85 @@ const Admin = () => {
             <StudentManagement />
           </TabsContent>
           
-          <TabsContent value="results">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Election Results</h2>
-              <Button onClick={handleFetchResults}>
-                <BarChart2 className="h-4 w-4 mr-2" />
-                Refresh Results
-              </Button>
-            </div>
-            
-            {Object.keys(results).length === 0 ? (
-              <Card>
-                <CardContent className="p-6">
-                  <div className="text-center py-8">
-                    <BarChart2 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                    <p className="text-gray-500">
-                      No voting results yet. Click "Refresh Results" to see the latest voting data.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-6">
-                {Object.keys(results).map((positionId) => {
-                  const position = positions.find(p => p.id === positionId);
-                  const candidatesList = results[positionId];
-                  
-                  if (!position) return null;
-                  
-                  const maxVotes = Math.max(...candidatesList.map(c => c.votes), 1);
-                  
-                  return (
-                    <Card key={positionId}>
-                      <CardHeader>
-                        <CardTitle>{position.title}</CardTitle>
-                        <CardDescription>
-                          Total Votes: {candidatesList.reduce((sum, c) => sum + c.votes, 0)}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {candidatesList.map((candidate) => (
-                            <div key={candidate.id} className="space-y-1">
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center">
-                                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 mr-2">
-                                    {candidate.photoURL ? (
-                                      <img 
-                                        src={candidate.photoURL} 
-                                        alt={candidate.name} 
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                        N/A
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className="font-medium">{candidate.name}</span>
-                                </div>
-                                <span className="text-sm font-medium">{candidate.votes} votes</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                <div 
-                                  className="bg-blue-600 h-2.5 rounded-full" 
-                                  style={{ width: `${(candidate.votes / maxVotes) * 100}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+          {isSuperAdmin() && (
+            <TabsContent value="results">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold">Election Results</h2>
+                <Button onClick={handleFetchResults}>
+                  <BarChart2 className="h-4 w-4 mr-2" />
+                  Refresh Results
+                </Button>
               </div>
-            )}
-          </TabsContent>
+              
+              {Object.keys(results).length === 0 ? (
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="text-center py-8">
+                      <BarChart2 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                      <p className="text-gray-500">
+                        No voting results yet. Click "Refresh Results" to see the latest voting data.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  {Object.keys(results).map((positionId) => {
+                    const position = positions.find(p => p.id === positionId);
+                    const candidatesList = results[positionId];
+                    
+                    if (!position) return null;
+                    
+                    const maxVotes = Math.max(...candidatesList.map(c => c.votes), 1);
+                    
+                    return (
+                      <Card key={positionId}>
+                        <CardHeader>
+                          <CardTitle>{position.title}</CardTitle>
+                          <CardDescription>
+                            Total Votes: {candidatesList.reduce((sum, c) => sum + c.votes, 0)}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {candidatesList.map((candidate) => (
+                              <div key={candidate.id} className="space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center">
+                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 mr-2">
+                                      {candidate.photoURL ? (
+                                        <img 
+                                          src={candidate.photoURL} 
+                                          alt={candidate.name} 
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                                          N/A
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span className="font-medium">{candidate.name}</span>
+                                  </div>
+                                  <span className="text-sm font-medium">{candidate.votes} votes</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                  <div 
+                                    className="bg-blue-600 h-2.5 rounded-full" 
+                                    style={{ width: `${(candidate.votes / maxVotes) * 100}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+          )}
           
           <TabsContent value="users">
             <div className="flex items-center justify-between mb-6">
@@ -621,6 +623,18 @@ const Admin = () => {
             <UserManagement />
           </TabsContent>
         </Tabs>
+        
+        {!isSuperAdmin() && currentTab === "results" && (
+          <div className="mt-8 p-6 bg-gray-100 rounded-lg border border-gray-200">
+            <div className="flex flex-col items-center justify-center text-center gap-3">
+              <Lock className="h-12 w-12 text-gray-400" />
+              <h3 className="text-xl font-medium">Results Access Restricted</h3>
+              <p className="text-gray-500 max-w-md">
+                Only superadmins can view election results. This helps maintain the integrity and confidentiality of the voting process.
+              </p>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
