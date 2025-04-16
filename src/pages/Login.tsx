@@ -54,7 +54,7 @@ const Login = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-center">Sign in to your account</CardTitle>
-            <CardDescription>Please use your @pdsb.net email to access FraserVotes</CardDescription>
+            <CardDescription className="text-center">Please use your @pdsb.net email to access FraserVotes</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
