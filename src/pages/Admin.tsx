@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -39,7 +40,9 @@ const Admin = () => {
   
   const [currentTab, setCurrentTab] = useState("candidates");
   const [isAddPositionOpen, setIsAddPositionOpen] = useState(false);
+  const [isEditPositionOpen, setIsEditPositionOpen] = useState(false);
   const [isAddCandidateOpen, setIsAddCandidateOpen] = useState(false);
+  const [isEditCandidateOpen, setIsEditCandidateOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [results, setResults] = useState<Record<string, Candidate[]>>({});
@@ -50,9 +53,24 @@ const Admin = () => {
     order: positions.length
   });
   
+  const [editPosition, setEditPosition] = useState<Position>({
+    id: "",
+    title: "",
+    description: "",
+    order: 0
+  });
+  
   const [newCandidate, setNewCandidate] = useState<Omit<Candidate, "id" | "votes">>({
     name: "",
     position: positions[0]?.id || "",
+    photoURL: "",
+    description: ""
+  });
+  
+  const [editCandidate, setEditCandidate] = useState<Omit<Candidate, "votes">>({
+    id: "",
+    name: "",
+    position: "",
     photoURL: "",
     description: ""
   });
@@ -85,6 +103,19 @@ const Admin = () => {
     setIsAddPositionOpen(false);
   };
   
+  const handleEditPosition = async () => {
+    if (!editPosition.title || !editPosition.id) return;
+    
+    const { id, ...positionData } = editPosition;
+    await updatePosition(id, positionData);
+    setIsEditPositionOpen(false);
+  };
+  
+  const handleOpenEditPosition = (position: Position) => {
+    setEditPosition({...position});
+    setIsEditPositionOpen(true);
+  };
+  
   const handleAddCandidate = async () => {
     if (!newCandidate.name || !newCandidate.position) return;
     
@@ -96,6 +127,25 @@ const Admin = () => {
       description: ""
     });
     setIsAddCandidateOpen(false);
+  };
+  
+  const handleEditCandidate = async () => {
+    if (!editCandidate.name || !editCandidate.position || !editCandidate.id) return;
+    
+    const { id, ...candidateData } = editCandidate;
+    await updateCandidate(id, candidateData);
+    setIsEditCandidateOpen(false);
+  };
+  
+  const handleOpenEditCandidate = (candidate: Candidate) => {
+    setEditCandidate({
+      id: candidate.id,
+      name: candidate.name,
+      position: candidate.position,
+      photoURL: candidate.photoURL || "",
+      description: candidate.description || ""
+    });
+    setIsEditCandidateOpen(true);
   };
   
   const handleUpdateSettings = async () => {
@@ -467,7 +517,11 @@ const Admin = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleOpenEditPosition(position)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 
@@ -503,7 +557,11 @@ const Admin = () => {
                                   <div className="flex items-start justify-between">
                                     <h3 className="font-medium">{candidate.name}</h3>
                                     <div className="flex items-center space-x-1">
-                                      <Button variant="ghost" size="sm">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => handleOpenEditCandidate(candidate)}
+                                      >
                                         <Edit className="h-3 w-3" />
                                       </Button>
                                       <Button 
@@ -529,6 +587,107 @@ const Admin = () => {
                 })}
               </div>
             )}
+
+            {/* Edit Position Dialog */}
+            <Dialog open={isEditPositionOpen} onOpenChange={setIsEditPositionOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Position</DialogTitle>
+                  <DialogDescription>
+                    Update this position's details
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-position-title">Title</Label>
+                    <Input
+                      id="edit-position-title"
+                      value={editPosition.title}
+                      onChange={(e) => setEditPosition({...editPosition, title: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-position-description">Description (Optional)</Label>
+                    <Input
+                      id="edit-position-description"
+                      value={editPosition.description || ""}
+                      onChange={(e) => setEditPosition({...editPosition, description: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-position-order">Display Order</Label>
+                    <Input
+                      id="edit-position-order"
+                      type="number"
+                      value={editPosition.order}
+                      onChange={(e) => setEditPosition({...editPosition, order: parseInt(e.target.value)})}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsEditPositionOpen(false)}>Cancel</Button>
+                  <Button onClick={handleEditPosition}>Save Changes</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Candidate Dialog */}
+            <Dialog open={isEditCandidateOpen} onOpenChange={setIsEditCandidateOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Candidate</DialogTitle>
+                  <DialogDescription>
+                    Update this candidate's details
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-candidate-name">Name</Label>
+                    <Input
+                      id="edit-candidate-name"
+                      value={editCandidate.name}
+                      onChange={(e) => setEditCandidate({...editCandidate, name: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-candidate-position">Position</Label>
+                    <select 
+                      id="edit-candidate-position"
+                      className="w-full p-2 border rounded-md"
+                      value={editCandidate.position}
+                      onChange={(e) => setEditCandidate({...editCandidate, position: e.target.value})}
+                    >
+                      <option value="">Select a position</option>
+                      {positions.map((position) => (
+                        <option key={position.id} value={position.id}>
+                          {position.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-candidate-photo">Photo URL</Label>
+                    <Input
+                      id="edit-candidate-photo"
+                      value={editCandidate.photoURL || ""}
+                      onChange={(e) => setEditCandidate({...editCandidate, photoURL: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-candidate-description">Bio (Optional)</Label>
+                    <Input
+                      id="edit-candidate-description"
+                      value={editCandidate.description || ""}
+                      onChange={(e) => setEditCandidate({...editCandidate, description: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsEditCandidateOpen(false)}>Cancel</Button>
+                  <Button onClick={handleEditCandidate}>Save Changes</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
           
           <TabsContent value="students">
