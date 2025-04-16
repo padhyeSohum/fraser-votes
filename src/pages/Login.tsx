@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,13 +27,15 @@ const Login = () => {
     setError("");
     try {
       await signInWithGoogle();
-      // Redirect will happen in the auth provider
+      // Redirect will happen in the auth provider if successful
     } catch (error: any) {
       console.error("Error signing in with Google:", error);
       if (error.code === "auth/unauthorized-domain") {
         setError("This domain is not authorized for authentication. Please use the production URL or contact an administrator.");
       } else if (error.code === "auth/cancelled-popup-request") {
         setError("Authentication cancelled. Please try again.");
+      } else if (error.code === "auth/popup-closed-by-user") {
+        setError("Sign-in popup was closed. Please try again.");
       } else {
         setError(error.message || "Sign in failed. Please try again.");
       }
@@ -65,6 +68,9 @@ const Login = () => {
               </Button>
             </div>
           </CardContent>
+          <CardFooter className="text-center text-sm text-gray-500">
+            <p className="w-full">Access is restricted to authorized users only. Contact an administrator if you need access.</p>
+          </CardFooter>
         </Card>
       </div>
     </div>;

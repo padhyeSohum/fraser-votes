@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 // Components
 import Header from "@/components/Header";
 import StudentManagement from "@/components/admin/StudentManagement";
+import UserManagement from "@/components/admin/UserManagement";
 
 const Admin = () => {
   const { userData } = useAuth();
@@ -337,7 +338,7 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-2" disabled={!isSuperAdmin}>
               <UserCheck className="h-4 w-4" />
-              User Roles
+              User Access
             </TabsTrigger>
           </TabsList>
           
@@ -632,22 +633,10 @@ const Admin = () => {
           
           <TabsContent value="users">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">User Role Management</h2>
+              <h2 className="text-xl font-semibold">User Access Management</h2>
             </div>
             
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>User Roles</CardTitle>
-                <CardDescription>
-                  Manage user access and permissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-4 text-gray-500">
-                  User role management features would be implemented here
-                </p>
-              </CardContent>
-            </Card>
+            <UserManagement />
           </TabsContent>
         </Tabs>
       </main>
