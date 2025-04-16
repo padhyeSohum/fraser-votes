@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogIn, AlertCircle, UserPlus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 const Login = () => {
   const {
     signInWithGoogle,
@@ -21,7 +19,6 @@ const Login = () => {
     navigate("/");
     return null;
   }
-  
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError("");
@@ -43,7 +40,6 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  
   return <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -62,10 +58,7 @@ const Login = () => {
             <CardDescription className="text-center">
               <div className="flex flex-col gap-2">
                 <p>Please use your @pdsb.net email to access FraserVotes</p>
-                <p className="text-amber-600 flex items-center justify-center gap-1">
-                  <UserPlus className="h-4 w-4" />
-                  <span>Your account must be pre-authorized by an admin</span>
-                </p>
+                
               </div>
             </CardDescription>
           </CardHeader>
@@ -82,5 +75,4 @@ const Login = () => {
       </div>
     </div>;
 };
-
 export default Login;
