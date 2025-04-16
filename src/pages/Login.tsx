@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogIn, AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 const Login = () => {
-  const { signInWithGoogle, currentUser } = useAuth();
+  const {
+    signInWithGoogle,
+    currentUser
+  } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -18,7 +19,6 @@ const Login = () => {
     navigate("/");
     return null;
   }
-
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError("");
@@ -38,46 +38,28 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+  return <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img 
-            src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" 
-            alt="FraserVotes Logo" 
-            className="mx-auto h-24 w-auto" 
-          />
+          <img src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" alt="FraserVotes Logo" className="mx-auto h-24 w-auto" />
           <h1 className="mt-6 text-3xl font-extrabold text-gray-900">FraserVotes</h1>
           <p className="mt-2 text-sm text-gray-600">School Election Platform</p>
         </div>
         
-        {error && (
-          <Alert variant="destructive" className="mb-4">
+        {error && <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+          </Alert>}
         
         <Card>
           <CardHeader>
-            <CardTitle>Sign in to your account</CardTitle>
-            <CardDescription>
-              Please use your @pdsb.net email to access the voting system
-            </CardDescription>
+            <CardTitle className="text-center">Sign in to your account</CardTitle>
+            <CardDescription>Please use your @pdsb.net email to access FraserVotes</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
-              <Button 
-                onClick={handleGoogleSignIn} 
-                className="w-full flex items-center justify-center gap-2"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                ) : (
-                  <LogIn className="h-5 w-5" />
-                )}
+              <Button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-2" disabled={isLoading}>
+                {isLoading ? <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <LogIn className="h-5 w-5" />}
                 <span>Sign in with Google</span>
               </Button>
             </div>
@@ -87,15 +69,8 @@ const Login = () => {
           </CardFooter>
         </Card>
         
-        <Alert className="mt-4">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            For demonstration, use 909957@pdsb.net to access superadmin features.
-          </AlertDescription>
-        </Alert>
+        
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Login;
