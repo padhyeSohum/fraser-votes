@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash, Edit, BarChart2, Settings, Users, UserCheck, Key } from "lucide-react";
+import { Plus, Trash, Edit, BarChart2, Settings, Users, UserCheck, Key, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { Position, Candidate, PinAccess } from "@/types";
@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Components
 import Header from "@/components/Header";
+import StudentManagement from "@/components/admin/StudentManagement";
 
 const Admin = () => {
   const { userData } = useAuth();
@@ -42,7 +43,6 @@ const Admin = () => {
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [results, setResults] = useState<Record<string, Candidate[]>>({});
   
-  // Form states
   const [newPosition, setNewPosition] = useState<Omit<Position, "id">>({
     title: "",
     description: "",
@@ -70,7 +70,6 @@ const Admin = () => {
   
   const navigate = useNavigate();
   
-  // Check if user is super admin
   const isSuperAdmin = userData?.role === "superadmin";
   
   if (loading) {
@@ -110,22 +109,18 @@ const Admin = () => {
   const handleAddPin = () => {
     if (!newPin.name || !newPin.pin) return;
     
-    // Create a copy of pins array or initialize if not exists
     const updatedPins = [...(settings.pins || [])];
     
-    // Add new pin
     updatedPins.push({
       id: uuidv4(),
       ...newPin
     });
     
-    // Update settings with new pins
     updateSettings({ 
       ...settings, 
       pins: updatedPins
     });
     
-    // Reset form
     setNewPin({
       name: "",
       pin: "",
@@ -249,7 +244,6 @@ const Admin = () => {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6 py-4">
-                  {/* Current PINs */}
                   <div>
                     <h3 className="text-lg font-medium mb-3">Active Access Codes</h3>
                     {settings.pins && settings.pins.length > 0 ? (
@@ -288,7 +282,6 @@ const Admin = () => {
                     )}
                   </div>
 
-                  {/* Add new PIN */}
                   <div className="border-t pt-4">
                     <h3 className="text-lg font-medium mb-3">Add New Access Code</h3>
                     <div className="grid grid-cols-3 gap-4">
@@ -334,6 +327,10 @@ const Admin = () => {
               <Users className="h-4 w-4" />
               Candidates
             </TabsTrigger>
+            <TabsTrigger value="students" className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Students
+            </TabsTrigger>
             <TabsTrigger value="results" className="flex items-center gap-2">
               <BarChart2 className="h-4 w-4" />
               Results
@@ -344,7 +341,6 @@ const Admin = () => {
             </TabsTrigger>
           </TabsList>
           
-          {/* Candidates Tab Content */}
           <TabsContent value="candidates" className="space-y-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Manage Positions & Candidates</h2>
@@ -552,7 +548,10 @@ const Admin = () => {
             )}
           </TabsContent>
           
-          {/* Results Tab Content */}
+          <TabsContent value="students">
+            <StudentManagement />
+          </TabsContent>
+          
           <TabsContent value="results">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">Election Results</h2>
@@ -581,7 +580,6 @@ const Admin = () => {
                   
                   if (!position) return null;
                   
-                  // Find the maximum number of votes for this position
                   const maxVotes = Math.max(...candidatesList.map(c => c.votes), 1);
                   
                   return (
@@ -632,7 +630,6 @@ const Admin = () => {
             )}
           </TabsContent>
           
-          {/* User Roles Tab Content (Super Admin Only) */}
           <TabsContent value="users">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">User Role Management</h2>
