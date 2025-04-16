@@ -34,7 +34,7 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img 
-            src="/lovable-uploads/98dcbb62-4d86-4964-8a30-848234660652.png" 
+            src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" 
             alt="FraserVotes Logo" 
             className="mx-auto h-24 w-auto" 
           />
