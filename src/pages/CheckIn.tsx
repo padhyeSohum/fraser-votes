@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -173,7 +172,6 @@ const CheckIn = () => {
           </div>
         </div>
         
-        {/* Instructions */}
         <div className="mt-8 p-6 bg-white rounded-lg shadow">
           <h2 className="text-xl font-bold mb-4">Check-In Instructions</h2>
           <ol className="list-decimal pl-5 space-y-2">
@@ -181,9 +179,6 @@ const CheckIn = () => {
             <li>Search for the student by name or ID number</li>
             <li>Click the "Check In" button to record their attendance</li>
             <li>Direct the student to the voting area once checked in</li>
-            {isSuperAdminUser && (
-              <li className="text-red-600">Super admins can reset a student's check-in status if needed</li>
-            )}
           </ol>
         </div>
       </main>
