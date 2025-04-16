@@ -4,16 +4,18 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ElectionProvider } from "./contexts/ElectionContext";
 import Footer from "./components/Footer";
+import LoadingScreen from "./components/LoadingScreen";
 
-// Import page components
-import Login from "./pages/Login";
-import Admin from "./pages/Admin";
-import CheckIn from "./pages/CheckIn";
-import Vote from "./pages/Vote";
-import NotFound from "./pages/NotFound";
+// Lazy load page components for better performance
+const Login = lazy(() => import("./pages/Login"));
+const Admin = lazy(() => import("./pages/Admin"));
+const CheckIn = lazy(() => import("./pages/CheckIn"));
+const Vote = lazy(() => import("./pages/Vote"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -29,7 +31,7 @@ const ProtectedRoute = ({
   const { currentUser, userData, loading, isAdmin, isSuperAdmin } = useAuth();
   
   if (loading) {
-    return <div className="h-screen flex items-center justify-center">Loading...</div>;
+    return <LoadingScreen message="Checking authentication..." />;
   }
   
   if (!currentUser) {
@@ -57,35 +59,37 @@ const App = () => (
           <BrowserRouter>
             <div className="flex flex-col min-h-screen">
               <div className="flex-grow">
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <CheckIn />
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="/admin" element={
-                    <ProtectedRoute requireAdmin={true}>
-                      <Admin />
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="/checkin" element={
-                    <ProtectedRoute>
-                      <CheckIn />
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="/vote" element={
-                    <ProtectedRoute>
-                      <Vote />
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <Suspense fallback={<LoadingScreen />}>
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <CheckIn />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/admin" element={
+                      <ProtectedRoute requireAdmin={true}>
+                        <Admin />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/checkin" element={
+                      <ProtectedRoute>
+                        <CheckIn />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/vote" element={
+                      <ProtectedRoute>
+                        <Vote />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
               </div>
               <Footer />
             </div>
