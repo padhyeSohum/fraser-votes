@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash, UserPlus, Mail, User as UserIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
@@ -19,7 +18,6 @@ const UserManagement = () => {
   const [newUser, setNewUser] = useState({
     email: "",
     name: "",
-    role: "staff" as "superadmin" | "admin" | "staff" | "student" | "guest"
   });
   
   const handleAddUser = async () => {
@@ -42,14 +40,13 @@ const UserManagement = () => {
       await addAuthorizedUser({
         email: newUser.email,
         name: newUser.name || undefined,
-        role: newUser.role
+        role: "staff" // Default role
       });
       
       // Reset form
       setNewUser({
         email: "",
         name: "",
-        role: "staff"
       });
     } catch (error: any) {
       console.error("Error adding user:", error);
@@ -92,7 +89,7 @@ const UserManagement = () => {
             </Alert>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="flex items-center gap-2">
@@ -117,27 +114,6 @@ const UserManagement = () => {
                   onChange={(e) => setNewUser({...newUser, name: e.target.value})}
                 />
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select 
-                value={newUser.role} 
-                onValueChange={(value) => setNewUser({
-                  ...newUser, 
-                  role: value as "superadmin" | "admin" | "staff" | "student" | "guest"
-                })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Administrator</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="guest">Guest</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           
