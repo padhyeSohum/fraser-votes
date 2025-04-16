@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +7,13 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ElectionProvider } from "./contexts/ElectionContext";
 import Footer from "./components/Footer";
+
+// Import page components
+import Login from "./pages/Login";
+import Admin from "./pages/Admin";
+import CheckIn from "./pages/CheckIn";
+import Vote from "./pages/Vote";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
