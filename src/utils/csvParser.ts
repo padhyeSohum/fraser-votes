@@ -8,7 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Parse CSV data and convert to student records
- * Expected format: Name,StudentID,Grade
+ * Expected format: FirstName,LastName,StudentID,Grade
+ * Or legacy format: Name,StudentID,Grade
  */
 export const parseStudentCSV = (csvText: string): Omit<Student, "id" | "checkedIn" | "checkedInBy" | "checkedInAt" | "hasVoted">[] => {
   try {
@@ -21,14 +22,20 @@ export const parseStudentCSV = (csvText: string): Omit<Student, "id" | "checkedI
     // Get headers (first line)
     const headers = firstLine.split(',').map(header => header.trim().toLowerCase());
     
-    // Find required column indices
+    // Find column indices
     const nameIndex = headers.findIndex(h => h === 'name');
+    const firstNameIndex = headers.findIndex(h => h === 'firstname' || h === 'first name');
+    const lastNameIndex = headers.findIndex(h => h === 'lastname' || h === 'last name');
     const idIndex = headers.findIndex(h => h === 'studentid' || h === 'student id' || h === 'id');
     const gradeIndex = headers.findIndex(h => h === 'grade');
     
+    // Check if we have name fields or first/last name fields
+    const hasSeparateNames = firstNameIndex !== -1 && lastNameIndex !== -1;
+    const hasFullName = nameIndex !== -1;
+    
     // Validate required columns exist
-    if (nameIndex === -1 || idIndex === -1 || gradeIndex === -1) {
-      throw new Error('CSV missing required columns. Headers must include: Name, StudentID, Grade');
+    if ((!hasFullName && !hasSeparateNames) || idIndex === -1 || gradeIndex === -1) {
+      throw new Error('CSV missing required columns. Headers must include either: [Name, StudentID, Grade] or [FirstName, LastName, StudentID, Grade]');
     }
     
     // Parse the rest of the lines into student objects
@@ -36,7 +43,15 @@ export const parseStudentCSV = (csvText: string): Omit<Student, "id" | "checkedI
       const columns = line.split(',').map(col => col.trim());
       
       // Get values from columns
-      const name = columns[nameIndex];
+      let name;
+      if (hasSeparateNames) {
+        const firstName = columns[firstNameIndex];
+        const lastName = columns[lastNameIndex];
+        name = `${firstName} ${lastName}`;
+      } else {
+        name = columns[nameIndex];
+      }
+      
       const studentId = columns[idIndex];
       const gradeStr = columns[gradeIndex];
       

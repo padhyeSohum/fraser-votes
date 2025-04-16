@@ -90,7 +90,7 @@ const StudentManagement = () => {
         <CardHeader>
           <CardTitle>Upload Student Data</CardTitle>
           <CardDescription>
-            Import student names, IDs, and grades from a CSV file
+            Import student data from a CSV file
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -104,7 +104,9 @@ const StudentManagement = () => {
                 onChange={handleFileChange}
               />
               <p className="text-sm text-gray-500">
-                CSV must include columns: Name, StudentID, Grade
+                CSV must include columns: FirstName, LastName, StudentID, Grade
+                <br />
+                or legacy format: Name, StudentID, Grade
               </p>
             </div>
             
