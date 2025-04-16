@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { 
   GoogleAuthProvider, 
@@ -17,6 +16,7 @@ interface UserData {
   role: "superadmin" | "admin" | "staff" | "student" | "guest";
   displayName?: string;
   photoURL?: string;
+  createdAt?: any; // Adding createdAt field to interface
 }
 
 // Define the shape of our context
