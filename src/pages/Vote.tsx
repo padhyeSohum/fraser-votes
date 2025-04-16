@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -20,7 +19,6 @@ const Vote = () => {
   
   const isVotingActive = settings.isActive;
 
-  // Check PIN
   const handlePinSubmit = () => {
     if (enteredPin === settings.pinCode) {
       setIsPinCorrect(true);
@@ -30,7 +28,6 @@ const Vote = () => {
     }
   };
   
-  // Handle candidate selection
   const selectCandidate = (positionId: string, candidateId: string) => {
     setSelectedCandidates({
       ...selectedCandidates,
@@ -38,14 +35,12 @@ const Vote = () => {
     });
   };
   
-  // Submit votes
   const handleSubmitVote = async () => {
     if (!currentUser) return;
     
     setLoading(true);
     
     try {
-      // Convert selections to vote objects
       const votes: Omit<VoteType, "id" | "timestamp">[] = Object.entries(selectedCandidates).map(
         ([positionId, candidateId]) => ({
           candidateId,
@@ -63,7 +58,6 @@ const Vote = () => {
     }
   };
   
-  // Group candidates by position
   const candidatesByPosition: Record<string, Candidate[]> = {};
   positions.forEach(position => {
     candidatesByPosition[position.id] = candidates.filter(
@@ -71,7 +65,6 @@ const Vote = () => {
     );
   });
   
-  // If voting is not active, show message
   if (!isVotingActive) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -92,7 +85,6 @@ const Vote = () => {
     );
   }
   
-  // If already voted, show thank you screen
   if (hasVoted) {
     return (
       <div className="min-h-screen bg-gray-50">

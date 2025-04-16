@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogIn, AlertCircle, Info } from "lucide-react";
+import { LogIn, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
 const Login = () => {
   const {
     signInWithGoogle,
@@ -19,6 +20,7 @@ const Login = () => {
     navigate("/");
     return null;
   }
+  
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError("");
@@ -43,7 +45,6 @@ const Login = () => {
         <div className="text-center mb-8">
           <img src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" alt="FraserVotes Logo" className="mx-auto h-24 w-auto" />
           <h1 className="mt-6 text-3xl font-extrabold text-gray-900 text-center">FraserVotes</h1>
-          
         </div>
         
         {error && <Alert variant="destructive" className="mb-4">
@@ -64,11 +65,9 @@ const Login = () => {
               </Button>
             </div>
           </CardContent>
-          
         </Card>
-        
-        
       </div>
     </div>;
 };
+
 export default Login;
