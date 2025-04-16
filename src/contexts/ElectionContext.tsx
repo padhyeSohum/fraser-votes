@@ -43,6 +43,7 @@ interface ElectionContextType {
   updateStudent: (id: string, student: Partial<Omit<Student, "id">>) => Promise<void>;
   removeStudent: (id: string) => Promise<void>;
   checkInStudent: (id: string, checkedInBy: string) => Promise<void>;
+  uncheckStudent: (id: string) => Promise<void>;
   
   // Settings methods
   updateSettings: (settings: Partial<ElectionSettings>) => Promise<void>;
@@ -854,6 +855,132 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const uncheckStudent = async (id: string) => {
+    try {
+      if (offlineMode) {
+        const studentIndex = students.findIndex(s => s.id === id);
+        
+        if (studentIndex === -1) {
+          toast({
+            title: "Error",
+            description: "Student not found",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (!students[studentIndex].checkedIn) {
+          toast({
+            title: "Warning",
+            description: "This student is not checked in",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const updatedStudents = [...students];
+        updatedStudents[studentIndex] = {
+          ...updatedStudents[studentIndex],
+          checkedIn: false,
+          checkedInBy: undefined,
+          checkedInAt: undefined
+        };
+        
+        setStudents(updatedStudents);
+        saveToLocalStorage('students', updatedStudents);
+        
+        toast({
+          title: "Success (Offline Mode)",
+          description: "Student check-in status has been reset",
+        });
+        return;
+      }
+      
+      const studentRef = doc(db, "students", id);
+      const studentDoc = await getDoc(studentRef);
+      
+      if (studentDoc.exists()) {
+        const studentData = studentDoc.data() as Student;
+        
+        if (!studentData.checkedIn) {
+          toast({
+            title: "Warning",
+            description: "This student is not checked in",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        await updateDoc(studentRef, {
+          checkedIn: false,
+          checkedInBy: null,
+          checkedInAt: null,
+          updatedAt: serverTimestamp()
+        });
+        
+        toast({
+          title: "Success",
+          description: "Student check-in status has been reset",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Student not found",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      console.error("Error unchecking student:", err);
+      
+      if (err.code === "permission-denied") {
+        setOfflineMode(true);
+        
+        const studentIndex = students.findIndex(s => s.id === id);
+        
+        if (studentIndex === -1) {
+          toast({
+            title: "Error",
+            description: "Student not found",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (!students[studentIndex].checkedIn) {
+          toast({
+            title: "Warning",
+            description: "This student is not checked in",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const updatedStudents = [...students];
+        updatedStudents[studentIndex] = {
+          ...updatedStudents[studentIndex],
+          checkedIn: false,
+          checkedInBy: undefined,
+          checkedInAt: undefined
+        };
+        
+        setStudents(updatedStudents);
+        saveToLocalStorage('students', updatedStudents);
+        
+        toast({
+          title: "Limited Access Mode",
+          description: "Student check-in status has been reset (local only)",
+        });
+      } else {
+        setError(err.message);
+        toast({
+          title: "Error",
+          description: `Failed to reset student check-in: ${err.message}`,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const updateSettings = async (newSettings: Partial<ElectionSettings>) => {
     try {
       if (offlineMode) {
@@ -1237,6 +1364,7 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updateStudent,
     removeStudent,
     checkInStudent,
+    uncheckStudent,
     updateSettings,
     startElection,
     endElection,

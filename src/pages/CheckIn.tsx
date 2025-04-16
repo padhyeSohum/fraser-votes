@@ -5,15 +5,27 @@ import { useElection } from "@/contexts/ElectionContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle, Search, UserCheck } from "lucide-react";
+import { CheckCircle, Search, UserCheck, XCircle } from "lucide-react";
 import Header from "@/components/Header";
 import { Student } from "@/types";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const CheckIn = () => {
-  const { currentUser } = useAuth();
-  const { students, checkInStudent } = useElection();
+  const { currentUser, isSuperAdmin } = useAuth();
+  const { students, checkInStudent, uncheckStudent } = useElection();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
+  const [studentToUncheck, setStudentToUncheck] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -33,6 +45,14 @@ const CheckIn = () => {
     if (!currentUser) return;
     await checkInStudent(studentId, currentUser.uid);
   };
+
+  const handleUncheckStudent = async () => {
+    if (!studentToUncheck || !isSuperAdmin()) return;
+    await uncheckStudent(studentToUncheck);
+    setStudentToUncheck(null);
+  };
+
+  const isSuperAdminUser = isSuperAdmin();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,14 +119,53 @@ const CheckIn = () => {
                     )}
                   </div>
                   <div className="col-span-2">
-                    <Button
-                      size="sm"
-                      variant={student.checkedIn ? "outline" : "default"}
-                      disabled={student.checkedIn}
-                      onClick={() => handleCheckIn(student.id)}
-                    >
-                      {student.checkedIn ? "Checked In" : "Check In"}
-                    </Button>
+                    {student.checkedIn ? (
+                      isSuperAdminUser ? (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => setStudentToUncheck(student.id)}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Uncheck
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Action</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to reset the check-in status for {student.name}? This should only be done in exceptional circumstances.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setStudentToUncheck(null)}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleUncheckStudent} className="bg-red-600 hover:bg-red-700">
+                                Yes, Uncheck
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled
+                        >
+                          Checked In
+                        </Button>
+                      )
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => handleCheckIn(student.id)}
+                      >
+                        Check In
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))
@@ -122,6 +181,9 @@ const CheckIn = () => {
             <li>Search for the student by name or ID number</li>
             <li>Click the "Check In" button to record their attendance</li>
             <li>Direct the student to the voting area once checked in</li>
+            {isSuperAdminUser && (
+              <li className="text-red-600">Super admins can reset a student's check-in status if needed</li>
+            )}
           </ol>
         </div>
       </main>
