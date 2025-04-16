@@ -7,7 +7,7 @@ import {
   onAuthStateChanged, 
   User
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -49,21 +49,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Function to fetch user data from Firestore
   const fetchUserData = async (user: User) => {
     try {
+      // Create a fallback user data object in case of errors
+      const fallbackUserData: UserData = {
+        email: user.email || "",
+        role: user.email === "909957@pdsb.net" ? "superadmin" : "guest",
+        displayName: user.displayName || "",
+        photoURL: user.photoURL || "",
+      };
+      
+      // Try to fetch from Firestore
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
       
       if (userSnap.exists()) {
+        // User exists in database
         setUserData(userSnap.data() as UserData);
+        console.log("Found existing user record:", userSnap.data());
       } else {
         // New user - create a record with default role
-        const newUserData: UserData = {
-          email: user.email || "",
-          role: user.email === "909957@pdsb.net" ? "superadmin" : "guest",
-          displayName: user.displayName || "",
-          photoURL: user.photoURL || "",
-        };
-        
         try {
+          const newUserData: UserData = {
+            ...fallbackUserData,
+            createdAt: serverTimestamp(),
+          };
+          
           await setDoc(userRef, newUserData);
           setUserData(newUserData);
           console.log("Created new user record:", newUserData);
@@ -71,19 +80,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             title: "Account Created",
             description: "Welcome! Your account has been set up.",
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error creating user document:", error);
-          // Even if we can't save to Firestore, still set local userData
-          setUserData(newUserData);
-          toast({
-            title: "Limited Access Mode",
-            description: "Firebase permissions are restricted. Some features may be unavailable.",
-            variant: "destructive",
-          });
+          // Fall back to local user data
+          setUserData(fallbackUserData);
+          
+          if (error.code === "permission-denied") {
+            toast({
+              title: "Limited Access Mode",
+              description: "Firebase permissions are restricted. Using fallback user data.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Warning",
+              description: "Could not save user data to database. Some features may be limited.",
+              variant: "destructive",
+            });
+          }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching user data:", error);
+      
       // Create a temporary user data object with basic information
       const fallbackUserData: UserData = {
         email: user.email || "",
@@ -93,11 +112,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       
       setUserData(fallbackUserData);
-      toast({
-        title: "Limited Access Mode",
-        description: "Firebase permissions are restricted. Some features may be unavailable.",
-        variant: "destructive",
-      });
+      
+      if (error.code === "permission-denied") {
+        toast({
+          title: "Limited Access Mode",
+          description: "Firebase permissions are restricted. Using fallback user data.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Data Access Error",
+          description: "Failed to fetch user data. Using fallback settings.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -129,11 +157,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } catch (error: any) {
       console.error("Error signing in with Google:", error);
+      
+      let errorMessage = "Failed to sign in with Google";
+      
+      if (error.code === "auth/unauthorized-domain") {
+        errorMessage = "This domain is not authorized for authentication. Please use the production URL.";
+      } else if (error.code === "auth/popup-closed-by-user") {
+        errorMessage = "Sign-in popup was closed. Please try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Authentication Failed",
-        description: error.message || "Failed to sign in with Google",
+        description: errorMessage,
         variant: "destructive",
       });
+      
+      throw error; // Re-throw for the login component to handle
     }
   };
 

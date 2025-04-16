@@ -14,7 +14,9 @@ const Header = () => {
     navigate("/login");
   };
 
+  // Safely check for admin role
   const isAdmin = userData?.role === "admin" || userData?.role === "superadmin";
+  const isSuperAdmin = userData?.role === "superadmin";
 
   return (
     <>
@@ -73,13 +75,13 @@ const Header = () => {
         </div>
       </header>
       
-      {userData?.role === "superadmin" && (
+      {isSuperAdmin && (
         <div className="container mx-auto px-4 py-2">
           <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Superadmin Mode</AlertTitle>
             <AlertDescription>
-              You are logged in as a superadmin. You can access all system features.
+              You are logged in as a superadmin. You can access all system features including user management.
             </AlertDescription>
           </Alert>
         </div>

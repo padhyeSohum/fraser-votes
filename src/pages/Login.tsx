@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogIn, AlertCircle } from "lucide-react";
+import { LogIn, AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
@@ -26,8 +26,14 @@ const Login = () => {
       await signInWithGoogle();
       // Redirect will happen in the auth provider
     } catch (error: any) {
-      console.error("Sign in failed:", error);
-      setError(error.message || "Sign in failed. Please try again.");
+      console.error("Error signing in with Google:", error);
+      if (error.code === "auth/unauthorized-domain") {
+        setError("This domain is not authorized for authentication. Please use the production URL or contact an administrator.");
+      } else if (error.code === "auth/cancelled-popup-request") {
+        setError("Authentication cancelled. Please try again.");
+      } else {
+        setError(error.message || "Sign in failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -80,6 +86,13 @@ const Login = () => {
             Only @pdsb.net accounts are authorized to access this system
           </CardFooter>
         </Card>
+        
+        <Alert className="mt-4">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            For demonstration, use 909957@pdsb.net to access superadmin features.
+          </AlertDescription>
+        </Alert>
       </div>
     </div>
   );
