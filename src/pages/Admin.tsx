@@ -58,9 +58,7 @@ const Admin = () => {
   });
   
   const [newSettings, setNewSettings] = useState({
-    pinCode: settings.pinCode,
-    title: settings.title,
-    allowMultipleVotes: settings.allowMultipleVotes
+    title: settings.title
   });
 
   const [newPin, setNewPin] = useState<Omit<PinAccess, "id" | "createdAt">>({
@@ -103,7 +101,10 @@ const Admin = () => {
   };
   
   const handleUpdateSettings = async () => {
-    await updateSettings(newSettings);
+    await updateSettings({
+      ...settings,
+      title: newSettings.title
+    });
     setIsSettingsOpen(false);
   };
 
@@ -197,31 +198,12 @@ const Admin = () => {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="pinCode">Legacy PIN Code</Label>
-                    <Input
-                      id="pinCode"
-                      value={newSettings.pinCode}
-                      onChange={(e) => setNewSettings({...newSettings, pinCode: e.target.value})}
-                    />
-                    <p className="text-xs text-gray-500">
-                      For backward compatibility. Use PIN management for new codes.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="title">Election Title</Label>
                     <Input
                       id="title"
                       value={newSettings.title}
                       onChange={(e) => setNewSettings({...newSettings, title: e.target.value})}
                     />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="multiple-votes"
-                      checked={newSettings.allowMultipleVotes}
-                      onCheckedChange={(checked) => setNewSettings({...newSettings, allowMultipleVotes: checked})}
-                    />
-                    <Label htmlFor="multiple-votes">Allow Multiple Votes</Label>
                   </div>
                 </div>
                 <DialogFooter>
