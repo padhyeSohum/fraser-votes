@@ -79,9 +79,9 @@ const Header = () => {
         <div className="container mx-auto px-4 py-2">
           <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Superadmin Mode</AlertTitle>
+            <AlertTitle>Warning: Elections Results Visible!</AlertTitle>
             <AlertDescription>
-              You are logged in as a superadmin. You can access all system features including user management.
+              You are logged in with an account that has access to voting results, pay extra care to who you share your device with.
             </AlertDescription>
           </Alert>
         </div>
