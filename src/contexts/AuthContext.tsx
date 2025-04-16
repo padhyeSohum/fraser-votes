@@ -63,14 +63,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           photoURL: user.photoURL || "",
         };
         
-        await setDoc(userRef, newUserData);
-        setUserData(newUserData);
+        try {
+          await setDoc(userRef, newUserData);
+          setUserData(newUserData);
+          console.log("Created new user record:", newUserData);
+          toast({
+            title: "Account Created",
+            description: "Welcome! Your account has been set up.",
+          });
+        } catch (error) {
+          console.error("Error creating user document:", error);
+          // Even if we can't save to Firestore, still set local userData
+          setUserData(newUserData);
+          toast({
+            title: "Limited Access Mode",
+            description: "Firebase permissions are restricted. Some features may be unavailable.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
+      // Create a temporary user data object with basic information
+      const fallbackUserData: UserData = {
+        email: user.email || "",
+        role: user.email === "909957@pdsb.net" ? "superadmin" : "guest",
+        displayName: user.displayName || "",
+        photoURL: user.photoURL || "",
+      };
+      
+      setUserData(fallbackUserData);
       toast({
-        title: "Error",
-        description: "Failed to fetch user data. Please try again.",
+        title: "Limited Access Mode",
+        description: "Firebase permissions are restricted. Some features may be unavailable.",
         variant: "destructive",
       });
     }
