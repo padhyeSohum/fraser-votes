@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogIn, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 const Login = () => {
   const {
     signInWithGoogle,
@@ -21,7 +19,6 @@ const Login = () => {
     navigate("/");
     return null;
   }
-  
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError("");
@@ -68,12 +65,9 @@ const Login = () => {
               </Button>
             </div>
           </CardContent>
-          <CardFooter className="text-center text-sm text-gray-500">
-            <p className="w-full">Access is restricted to authorized users only. Contact an administrator if you need access.</p>
-          </CardFooter>
+          
         </Card>
       </div>
     </div>;
 };
-
 export default Login;
