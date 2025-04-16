@@ -42,8 +42,8 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" alt="FraserVotes Logo" className="mx-auto h-24 w-auto" />
-          <h1 className="mt-6 text-3xl font-extrabold text-gray-900">FraserVotes</h1>
-          <p className="mt-2 text-sm text-gray-600">School Election Platform</p>
+          <h1 className="mt-6 text-3xl font-extrabold text-gray-900 text-center">FraserVotes</h1>
+          
         </div>
         
         {error && <Alert variant="destructive" className="mb-4">
@@ -64,9 +64,7 @@ const Login = () => {
               </Button>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-center text-xs text-gray-500">
-            Only @pdsb.net accounts are authorized to access this system
-          </CardFooter>
+          
         </Card>
         
         
