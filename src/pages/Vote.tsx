@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
 import { Button } from "@/components/ui/button";
@@ -69,13 +68,27 @@ const Vote = () => {
       );
       
       await submitVote(votes);
+      
+      // Show the success screen briefly before refreshing
       setHasVoted(true);
+      
+      // Set a brief timeout before refreshing the page
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+      
     } catch (error) {
       console.error("Error submitting votes:", error);
-    } finally {
       setLoading(false);
     }
   };
+  
+  // Clear any selected candidates when pin is first validated
+  useEffect(() => {
+    if (isPinCorrect) {
+      setSelectedCandidates({});
+    }
+  }, [isPinCorrect]);
   
   const candidatesByPosition: Record<string, Candidate[]> = {};
   positions.forEach(position => {
@@ -117,9 +130,7 @@ const Vote = () => {
               <p className="text-gray-600 mb-6">
                 Your vote has been recorded successfully. Thank you for participating in this election.
               </p>
-              <Button variant="outline" onClick={() => setHasVoted(false)}>
-                Back to Home
-              </Button>
+              <p className="text-gray-500 italic text-sm">Refreshing page...</p>
             </div>
           </div>
         </main>
