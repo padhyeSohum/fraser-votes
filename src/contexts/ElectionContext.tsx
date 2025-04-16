@@ -39,6 +39,7 @@ interface ElectionContextType {
   
   // Student methods
   addStudent: (student: Omit<Student, "id" | "checkedIn" | "hasVoted">) => Promise<void>;
+  addStudents: (students: Omit<Student, "id" | "checkedIn" | "checkedInBy" | "checkedInAt" | "hasVoted">[]) => Promise<void>;
   updateStudent: (id: string, student: Partial<Omit<Student, "id">>) => Promise<void>;
   removeStudent: (id: string) => Promise<void>;
   checkInStudent: (id: string, checkedInBy: string) => Promise<void>;
@@ -549,6 +550,78 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         toast({
           title: "Error",
           description: `Failed to add student: ${err.message}`,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const addStudents = async (studentsToAdd: Omit<Student, "id" | "checkedIn" | "checkedInBy" | "checkedInAt" | "hasVoted">[]) => {
+    try {
+      if (offlineMode) {
+        const newStudents = studentsToAdd.map(student => ({
+          ...student,
+          id: uuidv4(),
+          checkedIn: false,
+          hasVoted: false
+        }));
+        
+        const updatedStudents = [...students, ...newStudents];
+        setStudents(updatedStudents);
+        saveToLocalStorage('students', updatedStudents);
+        
+        toast({
+          title: "Success (Offline Mode)",
+          description: `Added ${studentsToAdd.length} students`,
+        });
+        return;
+      }
+      
+      const batch = [];
+      for (const student of studentsToAdd) {
+        const studentRef = doc(collection(db, "students"));
+        const studentData = {
+          ...student,
+          checkedIn: false,
+          hasVoted: false,
+          createdAt: serverTimestamp()
+        };
+        
+        batch.push(setDoc(studentRef, studentData));
+      }
+      
+      await Promise.all(batch);
+      
+      toast({
+        title: "Success",
+        description: `Added ${studentsToAdd.length} students`,
+      });
+    } catch (err: any) {
+      console.error("Error adding students:", err);
+      
+      if (err.code === "permission-denied") {
+        setOfflineMode(true);
+        
+        const newStudents = studentsToAdd.map(student => ({
+          ...student,
+          id: uuidv4(),
+          checkedIn: false,
+          hasVoted: false
+        }));
+        
+        const updatedStudents = [...students, ...newStudents];
+        setStudents(updatedStudents);
+        saveToLocalStorage('students', updatedStudents);
+        
+        toast({
+          title: "Limited Access Mode",
+          description: `Added ${studentsToAdd.length} students (local only)`,
+        });
+      } else {
+        setError(err.message);
+        toast({
+          title: "Error",
+          description: `Failed to add students: ${err.message}`,
           variant: "destructive",
         });
       }
@@ -1160,6 +1233,7 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updatePosition,
     removePosition,
     addStudent,
+    addStudents,
     updateStudent,
     removeStudent,
     checkInStudent,
