@@ -10,17 +10,15 @@ import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs
 import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
 
-// Define the shape of our user data
 interface UserData {
   email: string;
   role: "superadmin" | "admin" | "staff" | "student" | "guest";
   displayName?: string;
   photoURL?: string;
-  createdAt?: any; // Adding createdAt field to interface
-  authorized?: boolean; // Adding authorized field to interface
+  createdAt?: any;
+  authorized?: boolean;
 }
 
-// Define the shape of our authorized user
 interface AuthorizedUser {
   id: string;
   email: string;
@@ -29,7 +27,6 @@ interface AuthorizedUser {
   createdAt?: any;
 }
 
-// Define the shape of our context
 interface AuthContextType {
   currentUser: User | null;
   userData: UserData | null;
@@ -62,16 +59,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authorizedUsers, setAuthorizedUsers] = useState<AuthorizedUser[]>([]);
   const { toast } = useToast();
 
-  // Function to check if a user is authorized
   const isUserAuthorized = async (email: string): Promise<boolean> => {
     try {
-      // Check if it's a superadmin email
-      const superadminEmails = ["909957@pdsb.net", "728266@pdsb.net"];
+      const superadminEmails = ["909957@pdsb.net", "728266@pdsb.net", "816776@pdsb.net"];
       if (superadminEmails.includes(email)) {
         return true;
       }
       
-      // Check if the user exists in the authorized users collection
       const q = query(collection(db, "authorizedUsers"), where("email", "==", email));
       const querySnapshot = await getDocs(q);
       
@@ -81,8 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
   };
-  
-  // Function to fetch all authorized users
+
   const fetchAuthorizedUsers = async (): Promise<void> => {
     try {
       const usersCollection = collection(db, "authorizedUsers");
@@ -106,8 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
   };
-  
-  // Function to add an authorized user
+
   const addAuthorizedUser = async (user: Omit<AuthorizedUser, "id" | "createdAt">): Promise<void> => {
     try {
       const usersCollection = collection(db, "authorizedUsers");
@@ -123,7 +115,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: `${user.name || user.email} has been authorized`,
       });
       
-      // Refresh the list
       await fetchAuthorizedUsers();
     } catch (error) {
       console.error("Error adding authorized user:", error);
@@ -134,8 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
   };
-  
-  // Function to remove an authorized user
+
   const removeAuthorizedUser = async (userId: string): Promise<void> => {
     try {
       const userRef = doc(db, "authorizedUsers", userId);
@@ -149,7 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "User has been removed",
       });
       
-      // Refresh the list
       await fetchAuthorizedUsers();
     } catch (error) {
       console.error("Error removing authorized user:", error);
@@ -161,14 +150,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Function to fetch user data from Firestore
   const fetchUserData = async (user: User) => {
     try {
-      // Check if the user is authorized
       const authorized = await isUserAuthorized(user.email || "");
       
       if (!authorized) {
-        // If not authorized, sign them out
         await signOut(auth);
         toast({
           title: "Access Denied",
@@ -178,7 +164,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Create a fallback user data object in case of errors
       const fallbackUserData: UserData = {
         email: user.email || "",
         role: user.email === "909957@pdsb.net" ? "superadmin" : "guest",
@@ -187,56 +172,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authorized: true
       };
       
-      // Try to fetch from Firestore
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
       
       if (userSnap.exists()) {
-        // User exists in database
         setUserData({
           ...userSnap.data() as UserData,
           authorized: true
         });
         console.log("Found existing user record:", userSnap.data());
       } else {
-        // New user - create a record with default role
-        try {
-          const newUserData: UserData = {
-            ...fallbackUserData,
-            createdAt: serverTimestamp(),
-          };
-          
-          await setDoc(userRef, newUserData);
-          setUserData(newUserData);
-          console.log("Created new user record:", newUserData);
-          toast({
-            title: "Account Created",
-            description: "Welcome! Your account has been set up.",
-          });
-        } catch (error: any) {
-          console.error("Error creating user document:", error);
-          // Fall back to local user data
-          setUserData(fallbackUserData);
-          
-          if (error.code === "permission-denied") {
-            toast({
-              title: "Limited Access Mode",
-              description: "Firebase permissions are restricted. Using fallback user data.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Warning",
-              description: "Could not save user data to database. Some features may be limited.",
-              variant: "destructive",
-            });
-          }
-        }
+        const newUserData: UserData = {
+          ...fallbackUserData,
+          createdAt: serverTimestamp(),
+        };
+        
+        await setDoc(userRef, newUserData);
+        setUserData(newUserData);
+        console.log("Created new user record:", newUserData);
+        toast({
+          title: "Account Created",
+          description: "Welcome! Your account has been set up.",
+        });
       }
     } catch (error: any) {
       console.error("Error fetching user data:", error);
       
-      // If there's any error, sign the user out for safety
       await signOut(auth);
       setUserData(null);
       
@@ -248,18 +209,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Handle sign in with Google
   const signInWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      // Restrict to @pdsb.net domains
       provider.setCustomParameters({
         hd: "pdsb.net",
       });
       
       const result = await signInWithPopup(auth, provider);
       
-      // Check if user's email ends with @pdsb.net
       if (!result.user.email?.endsWith("@pdsb.net")) {
         await signOut(auth);
         toast({
@@ -270,7 +228,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Check if the user is authorized
       const isAuthorized = await isUserAuthorized(result.user.email);
       
       if (!isAuthorized) {
@@ -306,11 +263,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive",
       });
       
-      throw error; // Re-throw for the login component to handle
+      throw error;
     }
   };
 
-  // Handle logout
   const logout = async () => {
     try {
       await signOut(auth);
@@ -328,17 +284,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Check if user is an admin
   const isAdmin = () => {
     return userData?.role === "admin" || userData?.role === "superadmin";
   };
 
-  // Check if user is a superadmin
   const isSuperAdmin = () => {
     return userData?.role === "superadmin";
   };
 
-  // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
@@ -353,7 +306,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // Fetch authorized users on initial load
   useEffect(() => {
     if (currentUser && isAdmin()) {
       fetchAuthorizedUsers();
