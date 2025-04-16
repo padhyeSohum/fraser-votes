@@ -5,17 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ElectionProvider } from "./contexts/ElectionContext";
-
-// Pages
-import Login from "./pages/Login";
-import Admin from "./pages/Admin";
-import CheckIn from "./pages/CheckIn";
-import Vote from "./pages/Vote";
-import NotFound from "./pages/NotFound";
+import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
-// Protected route component
 const ProtectedRoute = ({ 
   children, 
   requireAdmin = false,
@@ -54,35 +47,40 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <CheckIn />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/admin" element={
-                <ProtectedRoute requireAdmin={true}>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/checkin" element={
-                <ProtectedRoute>
-                  <CheckIn />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/vote" element={
-                <ProtectedRoute>
-                  <Vote />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <div className="flex flex-col min-h-screen">
+              <div className="flex-grow">
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  
+                  <Route path="/" element={
+                    <ProtectedRoute>
+                      <CheckIn />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/admin" element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <Admin />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/checkin" element={
+                    <ProtectedRoute>
+                      <CheckIn />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/vote" element={
+                    <ProtectedRoute>
+                      <Vote />
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+              <Footer />
+            </div>
           </BrowserRouter>
         </TooltipProvider>
       </ElectionProvider>
