@@ -66,7 +66,7 @@ const Login = () => {
             <div className="text-center">
               <Button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-2" disabled={isLoading}>
                 {isLoading ? <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <LogIn className="h-5 w-5" />}
-                <span>Sign in with Google</span>
+                <span>Sign in</span>
               </Button>
             </div>
           </CardContent>
