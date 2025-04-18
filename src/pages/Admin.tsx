@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -18,7 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import Header from "@/components/Header";
 import StudentManagement from "@/components/admin/StudentManagement";
 import UserManagement from "@/components/admin/UserManagement";
-import { toast } from 'react-toastify';
+import { toast } from "@/components/ui/use-toast";
 
 const Admin = () => {
   const { userData, isSuperAdmin } = useAuth();
@@ -47,6 +48,7 @@ const Admin = () => {
   const [isEditCandidateOpen, setIsEditCandidateOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [results, setResults] = useState<Record<string, Candidate[]>>({});
   const [resetPassword, setResetPassword] = useState("");
   const [showResultsConfirmation, setShowResultsConfirmation] = useState(false);
