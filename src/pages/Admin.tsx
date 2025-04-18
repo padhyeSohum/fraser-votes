@@ -3,11 +3,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Plus, Trash, Edit, BarChart2, Settings, Users, UserCheck, Key, UserPlus, Lock } from "lucide-react";
+import { 
+  Plus, Trash, Edit, BarChart2, Settings, Users, 
+  UserCheck, Key, UserPlus, Lock, Power, AlertTriangle 
+} from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { Position, Candidate, PinAccess } from "@/types";
@@ -227,198 +229,115 @@ const Admin = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
+      {showWarning ? (
+        <AdminWarning onProceed={() => setShowWarning(false)} />
+      ) : (
       <main className="container mx-auto py-8 px-4">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <div className="flex items-center gap-4">
-            {settings.isActive ? (
+        <div className="mb-8 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
+              <p className="text-gray-500 mt-1">Manage your election settings and data</p>
+            </div>
+            <div className="flex items-center gap-3">
               <Button 
-                variant="destructive" 
-                onClick={endElection}
+                variant={settings.isActive ? "destructive" : "default"}
+                className="shadow-sm"
+                onClick={settings.isActive ? endElection : startElection}
               >
-                End Voting
+                <Power className="h-4 w-4 mr-2" />
+                {settings.isActive ? 'End Voting' : 'Start Voting'}
               </Button>
-            ) : (
-              <Button 
-                variant="default" 
-                onClick={startElection}
-              >
-                Start Voting
-              </Button>
-            )}
-            
-            <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  Reset Election
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Reset Election Data</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action will remove all positions, candidates, and voting results. It will also reset all student check-ins.
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="py-4">
-                  <Label htmlFor="reset-password">Enter Password</Label>
-                  <Input
-                    id="reset-password"
-                    type="password"
-                    value={resetPassword}
-                    onChange={(e) => setResetPassword(e.target.value)}
-                    placeholder="Enter the reset password"
-                    className="mt-2"
-                  />
-                </div>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setResetPassword("")}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleReset}>Reset</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Election Settings</DialogTitle>
-                  <DialogDescription>
-                    Configure the election settings
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Election Title</Label>
+              
+              <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="shadow-sm">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Reset Election
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="sm:max-w-[425px]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset Election Data</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action will remove all positions, candidates, and voting results. It will also reset all student check-ins.
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="py-4">
+                    <Label htmlFor="reset-password">Enter Password</Label>
                     <Input
-                      id="title"
-                      value={newSettings.title}
-                      onChange={(e) => setNewSettings({...newSettings, title: e.target.value})}
+                      id="reset-password"
+                      type="password"
+                      value={resetPassword}
+                      onChange={(e) => setResetPassword(e.target.value)}
+                      placeholder="Enter the reset password"
+                      className="mt-2"
                     />
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button onClick={handleUpdateSettings}>Save Changes</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setResetPassword("")}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleReset}>Reset</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
 
-            <Dialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Key className="h-4 w-4 mr-2" />
-                  Manage Pins
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>PIN Access Management</DialogTitle>
-                  <DialogDescription>
-                    Create and manage access PINs for voting
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-6 py-4">
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Active Access Codes</h3>
-                    {settings.pins && settings.pins.length > 0 ? (
-                      <div className="space-y-2">
-                        {settings.pins.map((pin) => (
-                          <div key={pin.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                            <div>
-                              <p className="font-medium">{pin.name}</p>
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm text-gray-500">PIN: {pin.pin}</p>
-                                <span className={`inline-flex h-2 w-2 rounded-full ${pin.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                <p className="text-xs text-gray-500">{pin.isActive ? 'Active' : 'Inactive'}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleTogglePinStatus(pin.id)}
-                              >
-                                {pin.isActive ? 'Disable' : 'Enable'}
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleRemovePin(pin.id)}
-                              >
-                                <Trash className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-center py-4">No access PINs defined yet</p>
-                    )}
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <h3 className="text-lg font-medium mb-3">Add New Access Code</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <Label htmlFor="pin-name">Name/Group</Label>
-                        <Input
-                          id="pin-name"
-                          placeholder="e.g., Grade 10 Students"
-                          value={newPin.name}
-                          onChange={(e) => setNewPin({...newPin, name: e.target.value})}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="pin-code">PIN Code</Label>
-                        <Input
-                          id="pin-code"
-                          placeholder="e.g., 1234"
-                          value={newPin.pin}
-                          onChange={(e) => setNewPin({...newPin, pin: e.target.value})}
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button 
-                          onClick={handleAddPin}
-                          disabled={!newPin.name || !newPin.pin}
-                          className="w-full"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add PIN
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Total Positions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{positions.length}</div>
+                <p className="text-xs text-muted-foreground">Election positions defined</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{candidates.length}</div>
+                <p className="text-xs text-muted-foreground">Registered candidates</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Election Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{settings.isActive ? 'Active' : 'Inactive'}</div>
+                <p className="text-xs text-muted-foreground">Current election state</p>
+              </CardContent>
+            </Card>
           </div>
         </div>
-        
-        <Tabs defaultValue="candidates" value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList className="mb-8">
-            <TabsTrigger value="candidates" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
+
+        <Tabs 
+          defaultValue="candidates" 
+          value={currentTab} 
+          onValueChange={setCurrentTab}
+          className="space-y-6"
+        >
+          <TabsList className="inline-flex h-12 items-center text-muted-foreground bg-white rounded-md p-1 text-sm font-medium shadow-sm">
+            <TabsTrigger value="candidates" className="rounded-sm px-4 py-2 hover:text-foreground data-[state=active]:text-primary">
+              <Users className="h-4 w-4 mr-2" />
               Candidates
             </TabsTrigger>
-            <TabsTrigger value="students" className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
+            <TabsTrigger value="students" className="rounded-sm px-4 py-2 hover:text-foreground data-[state=active]:text-primary">
+              <UserPlus className="h-4 w-4 mr-2" />
               Students
             </TabsTrigger>
             {isSuperAdmin() && (
-              <TabsTrigger value="results" className="flex items-center gap-2">
-                <BarChart2 className="h-4 w-4" />
+              <TabsTrigger value="results" className="rounded-sm px-4 py-2 hover:text-foreground data-[state=active]:text-primary">
+                <BarChart2 className="h-4 w-4 mr-2" />
                 Results
               </TabsTrigger>
             )}
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
+            <TabsTrigger value="users" className="rounded-sm px-4 py-2 hover:text-foreground data-[state=active]:text-primary">
+              <UserCheck className="h-4 w-4 mr-2" />
               User Access
             </TabsTrigger>
           </TabsList>
@@ -831,17 +750,20 @@ const Admin = () => {
         </Tabs>
         
         {!isSuperAdmin() && currentTab === "results" && (
-          <div className="mt-8 p-6 bg-gray-100 rounded-lg border border-gray-200">
-            <div className="flex flex-col items-center justify-center text-center gap-3">
-              <Lock className="h-12 w-12 text-gray-400" />
-              <h3 className="text-xl font-medium">Results Access Restricted</h3>
-              <p className="text-gray-500 max-w-md">
-                Only superadmins can view election results. This helps maintain the integrity and confidentiality of the voting process.
-              </p>
-            </div>
+          <div className="mt-8">
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Lock className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">Results Access Restricted</h3>
+                <p className="text-sm text-muted-foreground max-w-md mt-2">
+                  Only superadmins can view election results. This helps maintain the integrity and confidentiality of the voting process.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         )}
       </main>
+      )}
     </div>
   );
 };
