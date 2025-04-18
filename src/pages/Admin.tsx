@@ -96,7 +96,7 @@ const Admin = () => {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  if (showWarning) {
+  if (showWarning && settings.isActive) {
     return <AdminWarning onProceed={() => setShowWarning(false)} />;
   }
 
@@ -229,7 +229,7 @@ const Admin = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      {showWarning ? (
+      {showWarning && settings.isActive ? (
         <AdminWarning onProceed={() => setShowWarning(false)} />
       ) : (
       <main className="container mx-auto py-8 px-4">
