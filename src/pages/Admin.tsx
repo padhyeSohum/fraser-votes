@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -13,11 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useNavigate } from "react-router-dom";
 import { Position, Candidate, PinAccess } from "@/types";
 import { v4 as uuidv4 } from 'uuid';
-
-// Components
-import Header from "@/components/Header";
-import StudentManagement from "@/components/admin/StudentManagement";
-import UserManagement from "@/components/admin/UserManagement";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const Admin = () => {
   const { userData, isSuperAdmin } = useAuth();
@@ -35,7 +30,8 @@ const Admin = () => {
     updateSettings,
     startElection,
     endElection,
-    getResults
+    getResults,
+    resetElection
   } = useElection();
   
   const [currentTab, setCurrentTab] = useState("candidates");
@@ -46,6 +42,8 @@ const Admin = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [results, setResults] = useState<Record<string, Candidate[]>>({});
+  const [resetPassword, setResetPassword] = useState("");
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   
   const [newPosition, setNewPosition] = useState<Omit<Position, "id">>({
     title: "",
@@ -205,7 +203,13 @@ const Admin = () => {
     const data = await getResults();
     setResults(data);
   };
-  
+
+  const handleReset = () => {
+    resetElection(resetPassword);
+    setResetPassword("");
+    setIsResetDialogOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -230,6 +234,38 @@ const Admin = () => {
               </Button>
             )}
             
+            <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  Reset Election
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reset Election Data</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action will remove all positions, candidates, and voting results. It will also reset all student check-ins.
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="py-4">
+                  <Label htmlFor="reset-password">Enter Password</Label>
+                  <Input
+                    id="reset-password"
+                    type="password"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    placeholder="Enter the reset password"
+                    className="mt-2"
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setResetPassword("")}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleReset}>Reset</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">

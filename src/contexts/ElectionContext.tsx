@@ -53,6 +53,9 @@ interface ElectionContextType {
   // Voting methods
   submitVote: (votes: Omit<Vote, "id" | "timestamp">[]) => Promise<void>;
   getResults: () => Promise<Record<string, Candidate[]>>;
+  
+  // Reset election method
+  resetElection: (password: string) => Promise<void>;
 }
 
 const ElectionContext = createContext<ElectionContextType | null>(null);
@@ -1346,6 +1349,109 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const resetElection = async (password: string) => {
+    try {
+      if (password !== "akshatmygoat") {
+        toast({
+          title: "Error",
+          description: "Invalid reset password",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (offlineMode) {
+        setCandidates([]);
+        setPositions([]);
+        const resetStudents = students.map(student => ({
+          ...student,
+          checkedIn: false,
+          checkedInBy: undefined,
+          checkedInAt: undefined,
+          hasVoted: false,
+          votedAt: undefined
+        }));
+        setStudents(resetStudents);
+        
+        saveToLocalStorage('candidates', []);
+        saveToLocalStorage('positions', []);
+        saveToLocalStorage('students', resetStudents);
+        
+        toast({
+          title: "Success (Offline Mode)",
+          description: "Election data has been reset",
+        });
+        return;
+      }
+
+      // Delete all candidates
+      const candidatesSnapshot = await getDocs(collection(db, "candidates"));
+      const candidatePromises = candidatesSnapshot.docs.map(doc => 
+        updateDoc(doc.ref, { deleted: true, deletedAt: serverTimestamp() })
+      );
+      await Promise.all(candidatePromises);
+
+      // Delete all positions
+      const positionsSnapshot = await getDocs(collection(db, "positions"));
+      const positionPromises = positionsSnapshot.docs.map(doc => 
+        updateDoc(doc.ref, { deleted: true, deletedAt: serverTimestamp() })
+      );
+      await Promise.all(positionPromises);
+
+      // Reset all students
+      const studentsSnapshot = await getDocs(collection(db, "students"));
+      const studentPromises = studentsSnapshot.docs.map(doc => 
+        updateDoc(doc.ref, {
+          checkedIn: false,
+          checkedInBy: null,
+          checkedInAt: null,
+          hasVoted: false,
+          votedAt: null,
+          updatedAt: serverTimestamp()
+        })
+      );
+      await Promise.all(studentPromises);
+
+      toast({
+        title: "Success",
+        description: "Election data has been reset",
+      });
+    } catch (err: any) {
+      console.error("Error resetting election:", err);
+      
+      if (err.code === "permission-denied") {
+        setOfflineMode(true);
+        setCandidates([]);
+        setPositions([]);
+        const resetStudents = students.map(student => ({
+          ...student,
+          checkedIn: false,
+          checkedInBy: undefined,
+          checkedInAt: undefined,
+          hasVoted: false,
+          votedAt: undefined
+        }));
+        setStudents(resetStudents);
+        
+        saveToLocalStorage('candidates', []);
+        saveToLocalStorage('positions', []);
+        saveToLocalStorage('students', resetStudents);
+        
+        toast({
+          title: "Limited Access Mode",
+          description: "Election data has been reset (local only)",
+        });
+      } else {
+        setError(err.message);
+        toast({
+          title: "Error",
+          description: `Failed to reset election: ${err.message}`,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const value: ElectionContextType = {
     candidates,
     positions,
@@ -1369,7 +1475,8 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     startElection,
     endElection,
     submitVote,
-    getResults
+    getResults,
+    resetElection,
   };
 
   return (
