@@ -205,7 +205,7 @@ const Admin = () => {
   };
   
   const handleFetchResults = async () => {
-    if (resultsPassword !== 'nachofriesarecool') {
+    if (resultsPassword !== 'codyisabum') {
       toast({
         title: "Error",
         description: "Invalid password",
