@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,7 +18,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import Header from "@/components/Header";
 import StudentManagement from "@/components/admin/StudentManagement";
 import UserManagement from "@/components/admin/UserManagement";
-import AdminWarning from "@/components/admin/AdminWarning";
 
 const Admin = () => {
   const { userData, isSuperAdmin } = useAuth();
@@ -50,7 +49,6 @@ const Admin = () => {
   const [results, setResults] = useState<Record<string, Candidate[]>>({});
   const [resetPassword, setResetPassword] = useState("");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const [showWarning, setShowWarning] = useState(true);
   
   const [newPosition, setNewPosition] = useState<Omit<Position, "id">>({
     title: "",
@@ -96,142 +94,10 @@ const Admin = () => {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  if (showWarning && settings.isActive) {
-    return <AdminWarning onProceed={() => setShowWarning(false)} />;
-  }
-
-  const handleAddPosition = async () => {
-    if (!newPosition.title) return;
-    
-    await addPosition(newPosition);
-    setNewPosition({
-      title: "",
-      description: "",
-      order: positions.length + 1
-    });
-    setIsAddPositionOpen(false);
-  };
-  
-  const handleEditPosition = async () => {
-    if (!editPosition.title || !editPosition.id) return;
-    
-    const { id, ...positionData } = editPosition;
-    await updatePosition(id, positionData);
-    setIsEditPositionOpen(false);
-  };
-  
-  const handleOpenEditPosition = (position: Position) => {
-    setEditPosition({...position});
-    setIsEditPositionOpen(true);
-  };
-  
-  const handleAddCandidate = async () => {
-    if (!newCandidate.name || !newCandidate.position) return;
-    
-    await addCandidate(newCandidate);
-    setNewCandidate({
-      name: "",
-      position: positions[0]?.id || "",
-      photoURL: "",
-      description: ""
-    });
-    setIsAddCandidateOpen(false);
-  };
-  
-  const handleEditCandidate = async () => {
-    if (!editCandidate.name || !editCandidate.position || !editCandidate.id) return;
-    
-    const { id, ...candidateData } = editCandidate;
-    await updateCandidate(id, candidateData);
-    setIsEditCandidateOpen(false);
-  };
-  
-  const handleOpenEditCandidate = (candidate: Candidate) => {
-    setEditCandidate({
-      id: candidate.id,
-      name: candidate.name,
-      position: candidate.position,
-      photoURL: candidate.photoURL || "",
-      description: candidate.description || ""
-    });
-    setIsEditCandidateOpen(true);
-  };
-  
-  const handleUpdateSettings = async () => {
-    await updateSettings({
-      ...settings,
-      title: newSettings.title
-    });
-    setIsSettingsOpen(false);
-  };
-
-  const handleAddPin = () => {
-    if (!newPin.name || !newPin.pin) return;
-    
-    const updatedPins = [...(settings.pins || [])];
-    
-    updatedPins.push({
-      id: uuidv4(),
-      ...newPin
-    });
-    
-    updateSettings({ 
-      ...settings, 
-      pins: updatedPins
-    });
-    
-    setNewPin({
-      name: "",
-      pin: "",
-      isActive: true
-    });
-  };
-
-  const handleRemovePin = (pinId: string) => {
-    if (!settings.pins) return;
-    
-    const updatedPins = settings.pins.filter(pin => pin.id !== pinId);
-    updateSettings({ 
-      ...settings, 
-      pins: updatedPins
-    });
-  };
-
-  const handleTogglePinStatus = (pinId: string) => {
-    if (!settings.pins) return;
-    
-    const updatedPins = settings.pins.map(pin => 
-      pin.id === pinId ? { ...pin, isActive: !pin.isActive } : pin
-    );
-    
-    updateSettings({ 
-      ...settings, 
-      pins: updatedPins
-    });
-  };
-  
-  const handleFetchResults = async () => {
-    const data = await getResults();
-    setResults(data);
-  };
-
-  const handleReset = () => {
-    if (!resetPassword || resetPassword.trim() === "") {
-      return;
-    }
-    
-    resetElection(resetPassword);
-    setResetPassword("");
-    setIsResetDialogOpen(false);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      {showWarning && settings.isActive ? (
-        <AdminWarning onProceed={() => setShowWarning(false)} />
-      ) : (
       <main className="container mx-auto py-8 px-4">
         <div className="mb-8 space-y-4">
           <div className="flex items-center justify-between">
@@ -763,7 +629,6 @@ const Admin = () => {
           </div>
         )}
       </main>
-      )}
     </div>
   );
 };
