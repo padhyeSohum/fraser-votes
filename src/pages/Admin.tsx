@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -90,6 +91,132 @@ const Admin = () => {
   
   const navigate = useNavigate();
   
+  // Add back the handler functions that were removed
+  const handleAddPosition = async () => {
+    if (!newPosition.title) return;
+    
+    await addPosition(newPosition);
+    setNewPosition({
+      title: "",
+      description: "",
+      order: positions.length + 1
+    });
+    setIsAddPositionOpen(false);
+  };
+  
+  const handleEditPosition = async () => {
+    if (!editPosition.title || !editPosition.id) return;
+    
+    const { id, ...positionData } = editPosition;
+    await updatePosition(id, positionData);
+    setIsEditPositionOpen(false);
+  };
+  
+  const handleOpenEditPosition = (position: Position) => {
+    setEditPosition({...position});
+    setIsEditPositionOpen(true);
+  };
+  
+  const handleAddCandidate = async () => {
+    if (!newCandidate.name || !newCandidate.position) return;
+    
+    await addCandidate(newCandidate);
+    setNewCandidate({
+      name: "",
+      position: positions[0]?.id || "",
+      photoURL: "",
+      description: ""
+    });
+    setIsAddCandidateOpen(false);
+  };
+  
+  const handleEditCandidate = async () => {
+    if (!editCandidate.name || !editCandidate.position || !editCandidate.id) return;
+    
+    const { id, ...candidateData } = editCandidate;
+    await updateCandidate(id, candidateData);
+    setIsEditCandidateOpen(false);
+  };
+  
+  const handleOpenEditCandidate = (candidate: Candidate) => {
+    setEditCandidate({
+      id: candidate.id,
+      name: candidate.name,
+      position: candidate.position,
+      photoURL: candidate.photoURL || "",
+      description: candidate.description || ""
+    });
+    setIsEditCandidateOpen(true);
+  };
+  
+  const handleUpdateSettings = async () => {
+    await updateSettings({
+      ...settings,
+      title: newSettings.title
+    });
+    setIsSettingsOpen(false);
+  };
+
+  const handleAddPin = () => {
+    if (!newPin.name || !newPin.pin) return;
+    
+    const updatedPins = [...(settings.pins || [])];
+    
+    updatedPins.push({
+      id: uuidv4(),
+      ...newPin
+    });
+    
+    updateSettings({ 
+      ...settings, 
+      pins: updatedPins
+    });
+    
+    setNewPin({
+      name: "",
+      pin: "",
+      isActive: true
+    });
+  };
+
+  const handleRemovePin = (pinId: string) => {
+    if (!settings.pins) return;
+    
+    const updatedPins = settings.pins.filter(pin => pin.id !== pinId);
+    updateSettings({ 
+      ...settings, 
+      pins: updatedPins
+    });
+  };
+
+  const handleTogglePinStatus = (pinId: string) => {
+    if (!settings.pins) return;
+    
+    const updatedPins = settings.pins.map(pin => 
+      pin.id === pinId ? { ...pin, isActive: !pin.isActive } : pin
+    );
+    
+    updateSettings({ 
+      ...settings, 
+      pins: updatedPins
+    });
+  };
+  
+  const handleFetchResults = async () => {
+    const data = await getResults();
+    setResults(data);
+  };
+
+  const handleReset = () => {
+    if (!resetPassword || resetPassword.trim() === "") {
+      return;
+    }
+    
+    resetElection(resetPassword);
+    setResetPassword("");
+    setIsResetDialogOpen(false);
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
