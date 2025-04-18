@@ -1,15 +1,14 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Settings, AlertCircle } from "lucide-react";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { LogOut, User, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const Header = () => {
   const { currentUser, userData, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [showWarning, setShowWarning] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -20,87 +19,61 @@ const Header = () => {
   const isAdmin = userData?.role === "admin" || userData?.role === "superadmin";
   const isSuperAdmin = userData?.role === "superadmin";
 
-  useEffect(() => {
-    if (isSuperAdmin && location.pathname === "/admin") {
-      setShowWarning(true);
-      const timer = setTimeout(() => {
-        setShowWarning(false);
-      }, 60000); // 1 minute
-      return () => clearTimeout(timer);
-    } else {
-      setShowWarning(false);
-    }
-  }, [isSuperAdmin, location.pathname]);
-
   return (
-    <>
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-2">
-              <img
-                src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
-                alt="FraserVotes Logo"
-                className="h-8 w-auto"
-              />
-              <span className="font-bold text-xl">FraserVotes</span>
-            </Link>
-          </div>
+    <header className="bg-white shadow-sm border-b">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center">
+          <Link to="/" className="flex items-center gap-2">
+            <img
+              src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
+              alt="FraserVotes Logo"
+              className="h-8 w-auto"
+            />
+            <span className="font-bold text-xl">FraserVotes</span>
+          </Link>
+        </div>
 
-          <nav className="hidden md:flex items-center space-x-4">
-            <Link to="/checkin" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
-              Check-In
+        <nav className="hidden md:flex items-center space-x-4">
+          <Link to="/checkin" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
+            Check-In
+          </Link>
+          <Link to="/vote" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
+            Vote
+          </Link>
+          {isAdmin && (
+            <Link to="/admin" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
+              Admin
             </Link>
-            <Link to="/vote" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
-              Vote
-            </Link>
-            {isAdmin && (
-              <Link to="/admin" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
-                Admin
-              </Link>
-            )}
-          </nav>
+          )}
+        </nav>
 
-          <div className="flex items-center gap-2">
-            {currentUser && (
-              <>
-                <div className="hidden md:flex items-center mr-2">
-                  <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-200 mr-2">
-                    {currentUser.photoURL ? (
-                      <img
-                        src={currentUser.photoURL}
-                        alt={currentUser.displayName || "User"}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-full w-full p-1 text-gray-500" />
-                    )}
-                  </div>
-                  <span className="text-sm font-medium">{currentUser.displayName}</span>
+        <div className="flex items-center gap-2">
+          {currentUser && (
+            <>
+              <div className="hidden md:flex items-center mr-2">
+                <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-200 mr-2">
+                  {currentUser.photoURL ? (
+                    <img
+                      src={currentUser.photoURL}
+                      alt={currentUser.displayName || "User"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-full w-full p-1 text-gray-500" />
+                  )}
                 </div>
-                
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  <span className="hidden md:inline">Sign Out</span>
-                </Button>
-              </>
-            )}
-          </div>
+                <span className="text-sm font-medium">{currentUser.displayName}</span>
+              </div>
+              
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                <span className="hidden md:inline">Sign Out</span>
+              </Button>
+            </>
+          )}
         </div>
-      </header>
-      
-      {showWarning && (
-        <div className="container mx-auto px-4 py-2">
-          <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Warning: Elections Results Visible!</AlertTitle>
-            <AlertDescription>
-              You are logged in with an account that has access to voting results, pay extra care to who you share your device with.
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
-    </>
+      </div>
+    </header>
   );
 };
 
