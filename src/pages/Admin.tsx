@@ -797,7 +797,7 @@ const Admin = () => {
                 <Lock className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium">Results Access Restricted</h3>
                 <p className="text-sm text-muted-foreground max-w-md mt-2">
-                  Only superadmins can view election results. This helps maintain the integrity and confidentiality of the voting process.
+                  Only Presidents can view election results. This helps maintain the integrity and confidentiality of the voting process.
                 </p>
               </CardContent>
             </Card>
