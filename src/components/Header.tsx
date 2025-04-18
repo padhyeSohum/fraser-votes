@@ -1,13 +1,15 @@
-
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Settings, AlertCircle } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useEffect, useState } from "react";
 
 const Header = () => {
   const { currentUser, userData, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showWarning, setShowWarning] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -17,6 +19,18 @@ const Header = () => {
   // Safely check for admin role
   const isAdmin = userData?.role === "admin" || userData?.role === "superadmin";
   const isSuperAdmin = userData?.role === "superadmin";
+
+  useEffect(() => {
+    if (isSuperAdmin && location.pathname === "/admin") {
+      setShowWarning(true);
+      const timer = setTimeout(() => {
+        setShowWarning(false);
+      }, 60000); // 1 minute
+      return () => clearTimeout(timer);
+    } else {
+      setShowWarning(false);
+    }
+  }, [isSuperAdmin, location.pathname]);
 
   return (
     <>
@@ -75,7 +89,7 @@ const Header = () => {
         </div>
       </header>
       
-      {isSuperAdmin && (
+      {showWarning && (
         <div className="container mx-auto px-4 py-2">
           <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800">
             <AlertCircle className="h-4 w-4" />

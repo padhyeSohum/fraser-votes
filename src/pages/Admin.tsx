@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import Header from "@/components/Header";
 import StudentManagement from "@/components/admin/StudentManagement";
 import UserManagement from "@/components/admin/UserManagement";
+import AdminWarning from "@/components/admin/AdminWarning";
 
 const Admin = () => {
   const { userData, isSuperAdmin } = useAuth();
@@ -47,6 +48,7 @@ const Admin = () => {
   const [results, setResults] = useState<Record<string, Candidate[]>>({});
   const [resetPassword, setResetPassword] = useState("");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [showWarning, setShowWarning] = useState(true);
   
   const [newPosition, setNewPosition] = useState<Omit<Position, "id">>({
     title: "",
@@ -91,7 +93,11 @@ const Admin = () => {
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
-  
+
+  if (showWarning) {
+    return <AdminWarning onProceed={() => setShowWarning(false)} />;
+  }
+
   const handleAddPosition = async () => {
     if (!newPosition.title) return;
     
