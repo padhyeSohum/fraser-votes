@@ -19,8 +19,7 @@ const AdminWarning = ({ onProceed }: { onProceed: () => void }) => {
         <AlertCircle className="h-16 w-16 mx-auto text-amber-500" />
         <h2 className="text-2xl font-bold">⚠️ Warning: Voting Results Ahead ⚠️</h2>
         <p className="text-lg">
-          You are about to access a page containing election results and sensitive voting data.
-          Please ensure nobody else can see your screen.
+          This screen has live elections results visible. 
         </p>
         <div className="pt-4">
           {timeLeft > 0 ? (
