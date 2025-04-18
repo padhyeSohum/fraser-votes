@@ -1384,21 +1384,21 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      // Delete all candidates
+      // Reset candidates
       const candidatesSnapshot = await getDocs(collection(db, "candidates"));
       const candidatePromises = candidatesSnapshot.docs.map(doc => 
         updateDoc(doc.ref, { deleted: true, deletedAt: serverTimestamp() })
       );
       await Promise.all(candidatePromises);
 
-      // Delete all positions
+      // Reset positions
       const positionsSnapshot = await getDocs(collection(db, "positions"));
       const positionPromises = positionsSnapshot.docs.map(doc => 
         updateDoc(doc.ref, { deleted: true, deletedAt: serverTimestamp() })
       );
       await Promise.all(positionPromises);
 
-      // Reset all students
+      // Reset students
       const studentsSnapshot = await getDocs(collection(db, "students"));
       const studentPromises = studentsSnapshot.docs.map(doc => 
         updateDoc(doc.ref, {

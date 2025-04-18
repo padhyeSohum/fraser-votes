@@ -208,6 +208,10 @@ const Admin = () => {
   };
 
   const handleReset = () => {
+    if (!resetPassword || resetPassword.trim() === "") {
+      return;
+    }
+    
     resetElection(resetPassword);
     setResetPassword("");
     setIsResetDialogOpen(false);
@@ -627,7 +631,6 @@ const Admin = () => {
               </div>
             )}
 
-            {/* Edit Position Dialog */}
             <Dialog open={isEditPositionOpen} onOpenChange={setIsEditPositionOpen}>
               <DialogContent>
                 <DialogHeader>
@@ -670,7 +673,6 @@ const Admin = () => {
               </DialogContent>
             </Dialog>
 
-            {/* Edit Candidate Dialog */}
             <Dialog open={isEditCandidateOpen} onOpenChange={setIsEditCandidateOpen}>
               <DialogContent>
                 <DialogHeader>
