@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -19,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import Header from "@/components/Header";
 import StudentManagement from "@/components/admin/StudentManagement";
 import UserManagement from "@/components/admin/UserManagement";
+import { toast } from 'react-toastify';
 
 const Admin = () => {
   const { userData, isSuperAdmin } = useAuth();
@@ -49,7 +49,8 @@ const Admin = () => {
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [results, setResults] = useState<Record<string, Candidate[]>>({});
   const [resetPassword, setResetPassword] = useState("");
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [showResultsConfirmation, setShowResultsConfirmation] = useState(false);
+  const [resultsPassword, setResultsPassword] = useState("");
   
   const [newPosition, setNewPosition] = useState<Omit<Position, "id">>({
     title: "",
@@ -91,7 +92,6 @@ const Admin = () => {
   
   const navigate = useNavigate();
   
-  // Add back the handler functions that were removed
   const handleAddPosition = async () => {
     if (!newPosition.title) return;
     
@@ -203,8 +203,23 @@ const Admin = () => {
   };
   
   const handleFetchResults = async () => {
+    if (resultsPassword !== 'nachofriesarecool') {
+      toast({
+        title: "Error",
+        description: "Invalid password",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setShowResultsConfirmation(true);
+  };
+
+  const handleConfirmViewResults = async () => {
     const data = await getResults();
     setResults(data);
+    setShowResultsConfirmation(false);
+    setResultsPassword("");
   };
 
   const handleReset = () => {
@@ -657,11 +672,42 @@ const Admin = () => {
             <TabsContent value="results">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold">Election Results</h2>
-                <Button onClick={handleFetchResults}>
-                  <BarChart2 className="h-4 w-4 mr-2" />
-                  Refresh Results
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="password"
+                    placeholder="Enter password to view results"
+                    value={resultsPassword}
+                    onChange={(e) => setResultsPassword(e.target.value)}
+                    className="w-64"
+                  />
+                  <Button onClick={handleFetchResults}>
+                    <BarChart2 className="h-4 w-4 mr-2" />
+                    View Results
+                  </Button>
+                </div>
               </div>
+
+              <AlertDialog open={showResultsConfirmation} onOpenChange={setShowResultsConfirmation}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>View Election Results</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to view the election results? This action will be logged.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => {
+                      setShowResultsConfirmation(false);
+                      setResultsPassword("");
+                    }}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction onClick={handleConfirmViewResults}>
+                      View Results
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               
               {Object.keys(results).length === 0 ? (
                 <Card>
