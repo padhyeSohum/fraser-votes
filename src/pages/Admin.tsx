@@ -694,7 +694,7 @@ const Admin = () => {
                   <AlertDialogHeader>
                     <AlertDialogTitle>View Election Results</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to view the election results? This action will be logged.
+                      Are you sure you want to view the election results?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
