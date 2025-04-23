@@ -30,19 +30,19 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
     // Get existing registered credentials for this user to prevent duplicates
     const existingCredentials = await getSecurityKeyCredentials(userId);
     const excludeCredentials = existingCredentials.map(cred => ({
-      id: Uint8Array.from(atob(cred.id), c => c.charCodeAt(0)),
+      id: base64URLToBuffer(cred.id),
       type: 'public-key' as const,
     }));
 
     // Start registration process
     const registrationOptions = {
-      challenge: base64URLStringToUint8Array(challenge),
+      challenge: challenge, // SimpleWebAuthn expects a string here, not Uint8Array
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
       },
       user: {
-        id: base64URLStringToUint8Array(userId),
+        id: userId, // SimpleWebAuthn expects a string here, not Uint8Array
         name: userId,
         displayName: keyName
       },
@@ -65,7 +65,7 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
     
     // Store the credential in Firestore
     const credential: SecurityKeyCredential = {
-      id: arrayBufferToBase64(registration.rawId),
+      id: bufferToBase64URL(registration.rawId),
       publicKey: btoa(JSON.stringify(registration)),
       name: keyName,
       createdAt: new Date(),
@@ -99,13 +99,13 @@ export const authenticateWithSecurityKey = async (userId: string) => {
     }
 
     const allowCredentials = existingCredentials.map(cred => ({
-      id: Uint8Array.from(atob(cred.id), c => c.charCodeAt(0)),
+      id: base64URLToBuffer(cred.id),
       type: 'public-key' as const,
     }));
 
     // Start authentication process
     const authOptions = {
-      challenge: base64URLStringToUint8Array(challenge),
+      challenge: challenge, // SimpleWebAuthn expects a string here, not Uint8Array
       rpId: window.location.hostname,
       allowCredentials,
       timeout: 60000,
@@ -116,7 +116,7 @@ export const authenticateWithSecurityKey = async (userId: string) => {
     const authentication = await startAuthentication(authOptions);
     
     // Verify the credential ID matches one of our stored credentials
-    const credentialIdBase64 = arrayBufferToBase64(authentication.rawId);
+    const credentialIdBase64 = bufferToBase64URL(authentication.rawId);
     const matchedCredential = existingCredentials.find(cred => cred.id === credentialIdBase64);
     
     if (!matchedCredential) {
@@ -172,8 +172,8 @@ export const removeSecurityKey = async (credentialId: string) => {
   }
 };
 
-// Helper function to convert string to Uint8Array for WebAuthn
-function base64URLStringToUint8Array(base64URLString: string): Uint8Array {
+// Helper function to convert base64url string to buffer
+function base64URLToBuffer(base64URLString: string): ArrayBuffer {
   // Base64 URL decoding
   const base64 = base64URLString.replace(/-/g, '+').replace(/_/g, '/');
   const padLen = (4 - (base64.length % 4)) % 4;
@@ -186,11 +186,13 @@ function base64URLStringToUint8Array(base64URLString: string): Uint8Array {
     array[i] = binary.charCodeAt(i);
   }
   
-  return array;
+  return array.buffer;
 }
 
-// Helper function to convert ArrayBuffer to Base64 string
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
+// Helper function to convert ArrayBuffer to Base64URL string
+function bufferToBase64URL(buffer: ArrayBuffer): string {
   const binary = String.fromCharCode(...new Uint8Array(buffer));
-  return btoa(binary);
+  const base64 = btoa(binary);
+  // Convert to base64url format by replacing characters that are problematic in URLs
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
