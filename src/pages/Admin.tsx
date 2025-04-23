@@ -59,6 +59,7 @@ const Admin = () => {
   const [isSecurityTabVerified, setIsSecurityTabVerified] = useState(false);
   const [isStartStopVerificationOpen, setIsStartStopVerificationOpen] = useState(false);
   const [pendingElectionAction, setPendingElectionAction] = useState<'start' | 'stop' | null>(null);
+  const { toast } = useToast();
   
   const [newPosition, setNewPosition] = useState<Omit<Position, "id">>({
     title: "",
@@ -859,6 +860,38 @@ const Admin = () => {
             </Card>
           </div>
         )}
+        
+        <Dialog open={isSecurityPasswordDialogOpen} onOpenChange={setIsSecurityPasswordDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Security Access</DialogTitle>
+              <DialogDescription>
+                Enter the security password to access key management
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="security-password">Password</Label>
+              <Input
+                id="security-password"
+                type="password"
+                value={securityPassword}
+                onChange={(e) => setSecurityPassword(e.target.value)}
+                className="mt-2"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSecurityPasswordSubmit();
+                  }
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSecurityPasswordDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSecurityPasswordSubmit}>Submit</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

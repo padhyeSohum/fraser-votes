@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,8 +61,8 @@ const Login = () => {
       
       console.log("Security key verified:", result);
       
-      // Use the auth context to sign in with passkey
-      const signInSuccess = await signInWithPasskey();
+      // Pass the role information to the sign-in function
+      const signInSuccess = await signInWithPasskey(result.role);
       
       if (!signInSuccess) {
         throw new Error("Failed to authenticate with security key");
@@ -103,13 +104,11 @@ const Login = () => {
           </Alert>
         )}
         
-        <Card className="mx-4 md:mx-0">
+        <Card>
           <CardHeader>
             <CardTitle className="text-center text-xl md:text-2xl">Sign in to your account</CardTitle>
             <CardDescription className="text-center">
-              <div className="flex flex-col gap-2">
-                <p className="text-sm md:text-base">Please use your @pdsb.net email to access FraserVotes</p>
-              </div>
+              Please use your @pdsb.net email to access FraserVotes
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { 
   GoogleAuthProvider, 
@@ -35,7 +36,7 @@ interface AuthContextType {
   userData: UserData | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithPasskey: () => Promise<boolean>;
+  signInWithPasskey: (role?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
