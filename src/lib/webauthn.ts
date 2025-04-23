@@ -24,7 +24,7 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
     
     const existingCredentials = await getSecurityKeyCredentials(userId);
     const excludeCredentials = existingCredentials.map(cred => ({
-      id: base64URLToArrayBuffer(cred.id),
+      id: cred.id,
       type: 'public-key' as const,
       transports: ['usb', 'ble', 'nfc', 'internal'] as AuthenticatorTransport[]
     }));
@@ -85,7 +85,7 @@ export const authenticateWithSecurityKey = async (userId: string) => {
     }
 
     const allowCredentials = existingCredentials.map(cred => ({
-      id: base64URLToArrayBuffer(cred.id),
+      id: cred.id,
       type: 'public-key' as const,
       transports: ['usb', 'ble', 'nfc', 'internal'] as AuthenticatorTransport[]
     }));
