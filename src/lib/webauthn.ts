@@ -12,6 +12,26 @@ export interface PasskeyCredential {
   deviceName?: string;
 }
 
+// Helper function to convert base64 strings to ArrayBuffer
+const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+};
+
+// Helper function to convert ArrayBuffer to base64 string
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
 export const registerPasskey = async (userId: string, deviceName?: string) => {
   try {
     const challenge = generateChallenge();
@@ -45,7 +65,7 @@ export const registerPasskey = async (userId: string, deviceName?: string) => {
     const registration = await startRegistration(registrationOptions);
     
     const credential: PasskeyCredential = {
-      id: btoa(String.fromCharCode(...new Uint8Array(registration.rawId))),
+      id: arrayBufferToBase64(registration.rawId),
       publicKey: btoa(JSON.stringify(registration)),
       userHandle: userId,
       createdAt: new Date(),
@@ -76,7 +96,7 @@ export const authenticateWithPasskey = async (userId: string) => {
     };
 
     const authentication = await startAuthentication(authOptions);
-    const credentialIdBase64 = btoa(String.fromCharCode(...new Uint8Array(authentication.rawId)));
+    const credentialIdBase64 = arrayBufferToBase64(authentication.rawId);
     
     const q = query(collection(db, "passkeys"), where("id", "==", credentialIdBase64));
     const querySnapshot = await getDocs(q);

@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Key, Plus, Trash, Shield, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { registerPasskey, getPasskeys, removePasskey, PasskeyCredential } from "@/lib/webauthn";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const SecurityKeyManagement: React.FC = () => {
   const { currentUser, isSuperAdmin } = useAuth();

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Shield, Key, Loader2, Check, X } from "lucide-react";
-import { authenticateWithSecurityKey, getSecurityKeyCredentials } from "@/lib/webauthn";
+import { authenticateWithPasskey, getPasskeys } from "@/lib/webauthn";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface SecurityKeyVerificationProps {
@@ -39,7 +39,7 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
   const checkForRegisteredKeys = async () => {
     if (!currentUser) return;
     
-    const keys = await getSecurityKeyCredentials(currentUser.uid);
+    const keys = await getPasskeys(currentUser.uid);
     setHasKeys(keys.length > 0);
   };
   
@@ -56,7 +56,7 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
     setVerificationStep('verifying');
     
     try {
-      const result = await authenticateWithSecurityKey(currentUser.uid);
+      const result = await authenticateWithPasskey(currentUser.uid);
       
       if (result.success && result.verified) {
         setVerificationStep('success');
