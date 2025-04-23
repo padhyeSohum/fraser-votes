@@ -28,6 +28,7 @@ const SecurityKeyManagement: React.FC = () => {
   const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [keyPurpose, setKeyPurpose] = useState<'general' | 'election'>('general');
 
   useEffect(() => {
     if (currentUser) {
@@ -42,16 +43,27 @@ const SecurityKeyManagement: React.FC = () => {
   };
 
   const handleAddPasskey = async () => {
-    if (!currentUser) return;
+    if (!currentUser || !isSuperAdmin()) {
+      toast({
+        title: "Access Denied",
+        description: "Only superadmins can register security keys",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsRegistering(true);
     try {
-      const result = await registerPasskey(currentUser.uid, deviceName.trim());
+      const result = await registerPasskey(
+        currentUser.uid, 
+        `${deviceName.trim()} (${keyPurpose})`,
+        currentUser.uid // Pass superadmin ID
+      );
       
       if (result.success) {
         toast({
           title: "Success",
-          description: "Passkey registered successfully",
+          description: "Security key registered successfully",
         });
         setIsAddKeyDialogOpen(false);
         setDeviceName("");
@@ -60,10 +72,10 @@ const SecurityKeyManagement: React.FC = () => {
         throw new Error(result.error || 'Registration failed');
       }
     } catch (error: any) {
-      console.error('Passkey registration error:', error);
+      console.error('Security key registration error:', error);
       toast({
         title: "Registration Failed",
-        description: error.message || "Failed to register passkey",
+        description: error.message || "Failed to register security key",
         variant: "destructive",
       });
     } finally {
@@ -80,24 +92,24 @@ const SecurityKeyManagement: React.FC = () => {
       if (result.success) {
         toast({
           title: "Success",
-          description: "Passkey removed successfully",
+          description: "Security key removed successfully",
         });
         setSelectedKeyId(null);
         fetchPasskeys();
       } else {
-        throw new Error(result.error || 'Failed to remove passkey');
+        throw new Error(result.error || 'Failed to remove security key');
       }
     } catch (error: any) {
-      console.error('Passkey removal error:', error);
+      console.error('Security key removal error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to remove passkey",
+        description: error.message || "Failed to remove security key",
         variant: "destructive",
       });
     }
   };
 
-  // Only super admins can manage passkeys
+  // Only super admins can manage security keys
   if (!isSuperAdmin()) {
     return (
       <Card>
@@ -105,7 +117,7 @@ const SecurityKeyManagement: React.FC = () => {
           <Shield className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">Access Restricted</h3>
           <p className="text-sm text-muted-foreground max-w-md mt-2">
-            Only super administrators can manage passkeys.
+            Only super administrators can manage security keys.
           </p>
         </CardContent>
       </Card>
@@ -115,41 +127,47 @@ const SecurityKeyManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Passkey Management</h2>
+        <h2 className="text-xl font-semibold">Security Key Management</h2>
         <Dialog open={isAddKeyDialogOpen} onOpenChange={setIsAddKeyDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Register Passkey
+              Register Security Key
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Register New Passkey</DialogTitle>
+              <DialogTitle>Register New Security Key</DialogTitle>
               <DialogDescription>
-                Set up a passkey to enable secure access across all your devices
+                Add a new security key for authentication or election result access
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="device-name" className="col-span-4">
-                  Device Name (Optional)
+                  Device Name
                 </Label>
                 <Input
                   id="device-name"
                   value={deviceName}
                   onChange={(e) => setDeviceName(e.target.value)}
-                  placeholder="e.g., iPhone 15 Pro"
+                  placeholder="e.g., Election Key 1"
                   className="col-span-4"
                 />
               </div>
-              <div className="space-y-2 mt-2">
-                <div className="flex items-center p-3 bg-amber-50 border border-amber-200 rounded-md">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
-                  <p className="text-sm text-amber-700">
-                    Follow the prompts to register your passkey. This will work across all your devices.
-                  </p>
-                </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="key-purpose" className="col-span-4">
+                  Key Purpose
+                </Label>
+                <select
+                  id="key-purpose"
+                  value={keyPurpose}
+                  onChange={(e) => setKeyPurpose(e.target.value as 'general' | 'election')}
+                  className="col-span-4 w-full p-2 border rounded-md"
+                >
+                  <option value="general">General Authentication</option>
+                  <option value="election">Election Results Access</option>
+                </select>
               </div>
             </div>
             <DialogFooter>
@@ -157,7 +175,7 @@ const SecurityKeyManagement: React.FC = () => {
                 Cancel
               </Button>
               <Button onClick={handleAddPasskey} disabled={isRegistering}>
-                {isRegistering ? "Registering..." : "Register Passkey"}
+                {isRegistering ? "Registering..." : "Register Security Key"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -168,22 +186,22 @@ const SecurityKeyManagement: React.FC = () => {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-8 text-center">
             <Key className="h-12 w-12 text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium">No Passkeys Registered</h3>
+            <h3 className="text-lg font-medium">No Security Keys Registered</h3>
             <p className="text-sm text-muted-foreground max-w-md mt-2">
-              You haven't registered any passkeys yet. Passkeys provide a secure way to access sensitive information across all your devices.
+              You haven't registered any security keys yet. Security keys provide a secure way to access sensitive information across all your devices.
             </p>
             <Button onClick={() => setIsAddKeyDialogOpen(true)} className="mt-4">
               <Plus className="h-4 w-4 mr-2" />
-              Register Passkey
+              Register Security Key
             </Button>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Registered Passkeys</CardTitle>
+            <CardTitle>Registered Security Keys</CardTitle>
             <CardDescription>
-              Your registered passkeys that can be used across all your devices
+              Your registered security keys that can be used across all your devices
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -213,9 +231,9 @@ const SecurityKeyManagement: React.FC = () => {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Remove Passkey</AlertDialogTitle>
+                        <AlertDialogTitle>Remove Security Key</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to remove this passkey? You will need to register it again to use it.
+                          Are you sure you want to remove this security key? You will need to register it again to use it.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

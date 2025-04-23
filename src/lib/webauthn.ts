@@ -1,4 +1,3 @@
-
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -10,6 +9,8 @@ export interface PasskeyCredential {
   createdAt: any;
   userId: string;
   deviceName?: string;
+  registeredBy?: string;
+  purpose?: 'election' | 'general';
 }
 
 // Helper function to convert base64 strings to ArrayBuffer
@@ -32,14 +33,18 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   return btoa(binary);
 };
 
-export const registerPasskey = async (userId: string, deviceName?: string) => {
+export const registerPasskey = async (userId: string, deviceName?: string, superadminId?: string) => {
   try {
+    if (!superadminId) {
+      throw new Error('Only superadmins can register passkeys');
+    }
+
     // Generate random challenge as a base64 string
     const challengeString = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challengeString);
     
     const registrationOptions = {
-      challenge: challengeString, // Use the string for SimpleWebAuthn's PublicKeyCredentialCreationOptionsJSON
+      challenge: challengeString,
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
@@ -66,12 +71,14 @@ export const registerPasskey = async (userId: string, deviceName?: string) => {
     const registration = await startRegistration(registrationOptions);
     
     const credential: PasskeyCredential = {
-      id: registration.id, // Use the id directly from the registration response
+      id: registration.id,
       publicKey: btoa(JSON.stringify(registration)),
       userHandle: userId,
       createdAt: new Date(),
       userId,
-      deviceName
+      deviceName,
+      registeredBy: superadminId,
+      purpose: deviceName?.toLowerCase().includes('election') ? 'election' : 'general'
     };
 
     const keyRef = doc(collection(db, "passkeys"));
@@ -84,29 +91,30 @@ export const registerPasskey = async (userId: string, deviceName?: string) => {
   }
 };
 
-export const authenticateWithPasskey = async (userId: string) => {
+export const authenticateWithPasskey = async (userId: string, purpose?: 'election' | 'general') => {
   try {
-    // Generate random challenge as a base64 string
     const challengeString = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challengeString);
 
     const authOptions = {
-      challenge: challengeString, // Use the string for SimpleWebAuthn's PublicKeyCredentialRequestOptionsJSON
+      challenge: challengeString,
       rpId: window.location.hostname,
       timeout: 60000,
       userVerification: 'required' as const
     };
 
     const authentication = await startAuthentication(authOptions);
-    
-    // Use the id directly from the authentication response
     const credentialId = authentication.id;
     
-    const q = query(collection(db, "passkeys"), where("id", "==", credentialId));
+    const q = query(
+      collection(db, "passkeys"), 
+      where("id", "==", credentialId),
+      where("purpose", "==", purpose || 'general')
+    );
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
-      throw new Error('Unknown passkey');
+      throw new Error('Unknown or invalid passkey for this purpose');
     }
     
     return { 
