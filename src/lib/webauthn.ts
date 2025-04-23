@@ -1,4 +1,3 @@
-
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -34,14 +33,12 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
 
 export const registerPasskey = async (userId: string, deviceName?: string) => {
   try {
+    // Generate random challenge as a base64 string
     const challenge = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challenge);
     
-    // Convert the base64 challenge to ArrayBuffer for the WebAuthn API
-    const challengeBuffer = base64ToArrayBuffer(challenge);
-    
     const registrationOptions = {
-      challenge: challengeBuffer,
+      challenge, // Use string for PublicKeyCredentialCreationOptionsJSON
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
@@ -88,14 +85,12 @@ export const registerPasskey = async (userId: string, deviceName?: string) => {
 
 export const authenticateWithPasskey = async (userId: string) => {
   try {
+    // Generate random challenge as a base64 string
     const challenge = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challenge);
 
-    // Convert the base64 challenge to ArrayBuffer for the WebAuthn API
-    const challengeBuffer = base64ToArrayBuffer(challenge);
-
     const authOptions = {
-      challenge: challengeBuffer,
+      challenge, // Use string for PublicKeyCredentialRequestOptionsJSON
       rpId: window.location.hostname,
       timeout: 60000,
       userVerification: 'required' as const
