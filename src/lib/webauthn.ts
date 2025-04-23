@@ -37,8 +37,11 @@ export const registerPasskey = async (userId: string, deviceName?: string) => {
     const challenge = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challenge);
     
+    // Convert the base64 challenge to ArrayBuffer for the WebAuthn API
+    const challengeBuffer = base64ToArrayBuffer(challenge);
+    
     const registrationOptions = {
-      challenge,
+      challenge: challengeBuffer,
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
@@ -88,8 +91,11 @@ export const authenticateWithPasskey = async (userId: string) => {
     const challenge = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challenge);
 
+    // Convert the base64 challenge to ArrayBuffer for the WebAuthn API
+    const challengeBuffer = base64ToArrayBuffer(challenge);
+
     const authOptions = {
-      challenge,
+      challenge: challengeBuffer,
       rpId: window.location.hostname,
       timeout: 60000,
       userVerification: 'required' as const
