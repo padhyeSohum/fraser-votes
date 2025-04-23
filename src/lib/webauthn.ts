@@ -35,7 +35,7 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   return btoa(binary);
 };
 
-export const registerPasskey = async (deviceName?: string, superadminId?: string, role: string = 'admin', purpose: 'election' | 'general' = 'general') => {
+export const registerPasskey = async (deviceName?: string, superadminId?: string, role: 'superadmin' | 'admin' | 'staff' = 'admin', purpose: 'election' | 'general' = 'general') => {
   try {
     if (!superadminId) {
       throw new Error('Only superadmins can register passkeys');
