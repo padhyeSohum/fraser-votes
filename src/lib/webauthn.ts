@@ -1,4 +1,3 @@
-
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
@@ -11,11 +10,11 @@ export interface SecurityKeyCredential {
   userId: string;
 }
 
-// Generate a random challenge string
+// Generate a random challenge string in base64URL format
 export const generateChallenge = (): string => {
   const arr = new Uint8Array(32);
   window.crypto.getRandomValues(arr);
-  return Array.from(arr, dec => ('0' + dec.toString(16)).slice(-2)).join('');
+  return arrayBufferToBase64URL(arr.buffer);
 };
 
 // Register a new security key
@@ -30,26 +29,26 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
     // Get existing registered credentials for this user to prevent duplicates
     const existingCredentials = await getSecurityKeyCredentials(userId);
     const excludeCredentials = existingCredentials.map(cred => ({
-      id: base64URLToArrayBuffer(cred.id),
+      id: cred.id, // Keep as base64URL string for SimpleWebAuthn
       type: 'public-key' as const,
       transports: ['usb', 'ble', 'nfc', 'internal'] as const,
     }));
 
     // Start registration process
     const registrationOptions = {
-      challenge, // SimpleWebAuthn expects a string here
+      challenge, // Already in base64URL format
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
       },
       user: {
-        id: userId, // SimpleWebAuthn expects a string here
+        id: userId,
         name: userId,
         displayName: keyName
       },
       pubKeyCredParams: [
-        { type: 'public-key' as const, alg: -7 }, // ES256
-        { type: 'public-key' as const, alg: -257 }, // RS256
+        { type: 'public-key' as const, alg: -7 },
+        { type: 'public-key' as const, alg: -257 },
       ],
       authenticatorSelection: {
         authenticatorAttachment: 'cross-platform' as const,
@@ -100,14 +99,14 @@ export const authenticateWithSecurityKey = async (userId: string) => {
     }
 
     const allowCredentials = existingCredentials.map(cred => ({
-      id: base64URLToArrayBuffer(cred.id),
+      id: cred.id, // Keep as base64URL string for SimpleWebAuthn
       type: 'public-key' as const,
       transports: ['usb', 'ble', 'nfc', 'internal'] as const,
     }));
 
     // Start authentication process
     const authOptions = {
-      challenge, // SimpleWebAuthn expects a string here
+      challenge,
       rpId: window.location.hostname,
       allowCredentials,
       timeout: 60000,
@@ -174,6 +173,14 @@ export const removeSecurityKey = async (credentialId: string) => {
   }
 };
 
+// Helper function to convert ArrayBuffer to Base64URL string
+function arrayBufferToBase64URL(buffer: ArrayBuffer): string {
+  const binary = String.fromCharCode(...new Uint8Array(buffer));
+  const base64 = btoa(binary);
+  // Convert to base64url format by replacing characters that are problematic in URLs
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
 // Helper function to convert base64url string to ArrayBuffer
 function base64URLToArrayBuffer(base64URLString: string): ArrayBuffer {
   // Base64 URL decoding
@@ -189,12 +196,4 @@ function base64URLToArrayBuffer(base64URLString: string): ArrayBuffer {
   }
   
   return array.buffer;
-}
-
-// Helper function to convert ArrayBuffer to Base64URL string
-function arrayBufferToBase64URL(buffer: ArrayBuffer): string {
-  const binary = String.fromCharCode(...new Uint8Array(buffer));
-  const base64 = btoa(binary);
-  // Convert to base64url format by replacing characters that are problematic in URLs
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
