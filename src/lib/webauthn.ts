@@ -63,6 +63,11 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
       excludeCredentials
     };
 
+    // Convert the challenge string to ArrayBuffer for startRegistration
+    // This fixes the error on line 71
+    const challengeBuffer = base64URLToArrayBuffer(challenge);
+    registrationOptions.challenge = challengeBuffer;
+
     // Start the registration process
     const registration = await startRegistration(registrationOptions);
     
@@ -116,6 +121,11 @@ export const authenticateWithSecurityKey = async (userId: string) => {
       timeout: 60000,
       userVerification: 'required' as const
     };
+
+    // Convert the challenge string to ArrayBuffer for startAuthentication
+    // This fixes the error on line 124
+    const challengeBuffer = base64URLToArrayBuffer(challenge);
+    authOptions.challenge = challengeBuffer;
 
     // Start the authentication process
     const authentication = await startAuthentication(authOptions);
