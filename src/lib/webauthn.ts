@@ -1,3 +1,4 @@
+
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -27,7 +28,7 @@ const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
   let binary = '';
-  for (let i = 0; bytes.byteLength; i++) {
+  for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
@@ -130,11 +131,16 @@ export const authenticateWithPasskey = async (userId: string, purpose?: 'electio
       throw new Error(`Unknown or invalid passkey for ${purpose || 'general'} purpose`);
     }
     
-    // Return the successful authentication with credential ID
+    // Get the user ID associated with this credential
+    const passkeyData = querySnapshot.docs[0].data() as PasskeyCredential;
+    const passkeyUserId = passkeyData.userId;
+    
+    // Return the successful authentication with credential ID and user ID
     return { 
       success: true, 
       verified: true, 
-      credentialId: credentialId 
+      credentialId: credentialId,
+      userId: passkeyUserId
     };
   } catch (error) {
     console.error('Error authenticating with passkey:', error);
