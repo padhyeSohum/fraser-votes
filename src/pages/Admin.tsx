@@ -44,6 +44,7 @@ const Admin = () => {
   } = useElection();
   
   const [currentTab, setCurrentTab] = useState("candidates");
+  const [hasVerifiedResults, setHasVerifiedResults] = useState(false);
   const [isAddPositionOpen, setIsAddPositionOpen] = useState(false);
   const [isEditPositionOpen, setIsEditPositionOpen] = useState(false);
   const [isAddCandidateOpen, setIsAddCandidateOpen] = useState(false);
@@ -219,6 +220,7 @@ const Admin = () => {
   const handleKeyVerificationSuccess = async () => {
     const data = await getResults();
     setResults(data);
+    setHasVerifiedResults(true);
     setIsKeyVerificationOpen(false);
     
     toast({
@@ -293,6 +295,20 @@ const Admin = () => {
   const handleElectionKeyVerificationCancel = () => {
     setIsStartStopVerificationOpen(false);
     setPendingElectionAction(null);
+  };
+
+  const handleTabChange = (value: string) => {
+    if (value === "security" && !isSecurityTabVerified) {
+      setIsSecurityPasswordDialogOpen(true);
+      return;
+    }
+    
+    if (currentTab === "results" && value !== "results") {
+      setResults({});
+      setHasVerifiedResults(false);
+    }
+    
+    setCurrentTab(value);
   };
 
   if (loading) {
@@ -396,7 +412,7 @@ const Admin = () => {
         <Tabs 
           defaultValue="candidates" 
           value={currentTab} 
-          onValueChange={handleSecurityTabClick}
+          onValueChange={handleTabChange}
           className="space-y-6"
         >
           <TabsList className="inline-flex h-12 items-center text-muted-foreground bg-white rounded-md p-1 text-sm font-medium shadow-sm">
@@ -755,7 +771,7 @@ const Admin = () => {
                 <div>
                   <Button onClick={handleFetchResults}>
                     <Shield className="h-4 w-4 mr-2" />
-                    Verify & View Results
+                    {hasVerifiedResults ? 'Refresh Results' : 'Verify & View Results'}
                   </Button>
                 </div>
               </div>
@@ -767,7 +783,7 @@ const Admin = () => {
                 onCancel={handleKeyVerificationCancel}
               />
               
-              {Object.keys(results).length === 0 ? (
+              {!hasVerifiedResults ? (
                 <Card>
                   <CardContent className="p-6">
                     <div className="text-center py-8">
@@ -836,7 +852,7 @@ const Admin = () => {
               )}
             </TabsContent>
           )}
-
+          
           {isSuperAdmin() && (
             <TabsContent value="security">
               <SecurityKeyManagement />
