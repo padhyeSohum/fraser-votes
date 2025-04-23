@@ -1,3 +1,4 @@
+
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -27,7 +28,7 @@ const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
   let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
+  for (let i = 0; bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
@@ -70,6 +71,9 @@ export const registerPasskey = async (userId: string, deviceName?: string, super
 
     const registration = await startRegistration(registrationOptions);
     
+    // Extract purpose from device name or use provided purpose
+    const purpose = deviceName?.toLowerCase().includes('election') ? 'election' : 'general';
+    
     const credential: PasskeyCredential = {
       id: registration.id,
       publicKey: btoa(JSON.stringify(registration)),
@@ -78,7 +82,7 @@ export const registerPasskey = async (userId: string, deviceName?: string, super
       userId,
       deviceName,
       registeredBy: superadminId,
-      purpose: deviceName?.toLowerCase().includes('election') ? 'election' : 'general'
+      purpose
     };
 
     const keyRef = doc(collection(db, "passkeys"));
@@ -93,6 +97,7 @@ export const registerPasskey = async (userId: string, deviceName?: string, super
 
 export const authenticateWithPasskey = async (userId: string, purpose?: 'election' | 'general') => {
   try {
+    console.log(`Authenticating with purpose: ${purpose || 'general'}`);
     const challengeString = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challengeString);
 
@@ -106,17 +111,29 @@ export const authenticateWithPasskey = async (userId: string, purpose?: 'electio
     const authentication = await startAuthentication(authOptions);
     const credentialId = authentication.id;
     
-    const q = query(
+    // Create a query to find the credential by ID
+    let q = query(
       collection(db, "passkeys"), 
-      where("id", "==", credentialId),
-      where("purpose", "==", purpose || 'general')
+      where("id", "==", credentialId)
     );
+    
+    // If purpose is specified, also filter by purpose
+    if (purpose) {
+      q = query(
+        collection(db, "passkeys"), 
+        where("id", "==", credentialId),
+        where("purpose", "==", purpose)
+      );
+    }
+    
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
-      throw new Error('Unknown or invalid passkey for this purpose');
+      console.error(`No matching passkey found with purpose: ${purpose || 'general'}`);
+      throw new Error(`Unknown or invalid passkey for ${purpose || 'general'} purpose`);
     }
     
+    // Return the successful authentication with credential ID
     return { 
       success: true, 
       verified: true, 
@@ -170,5 +187,5 @@ export const removePasskey = async (credentialId: string) => {
 function generateChallenge(): string {
   const array = new Uint8Array(32);
   window.crypto.getRandomValues(array);
-  return btoa(String.fromCharCode(...array));
+  return btoa(String.fromCharCode.apply(null, Array.from(array)));
 }

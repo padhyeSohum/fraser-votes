@@ -38,9 +38,11 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
     setVerificationStep('verifying');
     
     try {
+      console.log("Verifying with election purpose key");
       const result = await authenticateWithPasskey(currentUser.uid, 'election');
       
       if (result.success && result.verified) {
+        console.log("Security key verification successful");
         setVerificationStep('success');
         setTimeout(() => {
           onSuccess();
@@ -55,7 +57,7 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
       
       toast({
         title: "Verification Failed",
-        description: error.message || "Failed to verify security key",
+        description: error.message || "Failed to verify election security key",
         variant: "destructive",
       });
     }
@@ -75,7 +77,7 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
           {verificationStep === 'initial' && (
             <div className="text-center space-y-4">
               <Key className="h-12 w-12 text-primary mx-auto" />
-              <div className="text-lg font-semibold">Connect Your Security Key</div>
+              <div className="text-lg font-semibold">Connect Your Election Security Key</div>
               <p className="text-sm text-muted-foreground">
                 Insert your election security key and click the button below to verify
               </p>
