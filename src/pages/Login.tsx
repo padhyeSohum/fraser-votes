@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +7,6 @@ import { LogIn, AlertCircle, KeyRound } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { authenticateWithPasskey } from "@/lib/webauthn";
 import { useToast } from "@/hooks/use-toast";
-
 const Login = () => {
   const {
     signInWithGoogle,
@@ -27,7 +25,6 @@ const Login = () => {
     navigate("/");
     return null;
   }
-  
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError("");
@@ -49,21 +46,19 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  
   const handleSecurityKeySignIn = async () => {
     setIsLoading(true);
     setError("");
     try {
-      // Optimize: Only perform one Firebase operation instead of multiple
+      // First, verify the security key without needing a specific user ID
       const result = await authenticateWithPasskey();
-      
       if (!result.success) {
         throw new Error(result.error || "Security key verification failed");
       }
-      
+      console.log("Security key verified:", result);
+
       // Pass the role information to the sign-in function
       const signInSuccess = await signInWithPasskey(result.role);
-      
       if (!signInSuccess) {
         throw new Error("Failed to authenticate with security key");
       }
@@ -82,7 +77,6 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  
   return <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-6 md:mb-8">
@@ -119,11 +113,12 @@ const Login = () => {
                   
                 </div>
               </div>
+
+              
             </div>
           </CardContent>
         </Card>
       </div>
     </div>;
 };
-
 export default Login;

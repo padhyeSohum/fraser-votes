@@ -12,9 +12,7 @@ import {
   onSnapshot,
   Timestamp,
   serverTimestamp,
-  increment,
-  limit,
-  startAfter
+  increment
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
@@ -58,17 +56,6 @@ interface ElectionContextType {
   
   // Reset election method
   resetElection: (password: string) => Promise<void>;
-  
-  // New refresh methods for manual data loading
-  refreshData: () => Promise<void>;
-  refreshCandidates: () => Promise<void>;
-  refreshPositions: () => Promise<void>;
-  refreshStudents: () => Promise<void>;
-  refreshSettings: () => Promise<void>;
-  
-  // Pagination methods
-  loadMoreStudents: () => Promise<void>;
-  hasMoreStudents: boolean;
 }
 
 const ElectionContext = createContext<ElectionContextType | null>(null);
@@ -99,8 +86,6 @@ const getFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
   }
 };
 
-const CACHE_EXPIRY = 5 * 60 * 1000;
-
 export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -115,31 +100,57 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [error, setError] = useState<string | null>(null);
   const [offlineMode, setOfflineMode] = useState(false);
   const { toast } = useToast();
-  
-  const [studentsLastDoc, setStudentsLastDoc] = useState<any>(null);
-  const [hasMoreStudents, setHasMoreStudents] = useState(false);
-  const [studentsPerPage] = useState(50); // Load 50 students at a time
-  
-  const [lastRefreshTime, setLastRefreshTime] = useState({
-    candidates: Date.now(),
-    positions: Date.now(),
-    students: Date.now(),
-    settings: Date.now()
-  });
 
   useEffect(() => {
-    const setupInitialData = async () => {
+    let unsubscribers: (() => void)[] = [];
+    
+    const setupFirebaseListeners = async () => {
       try {
-        setLoading(true);
-        await Promise.all([
-          fetchCandidates(),
-          fetchPositions(),
-          fetchStudentsBatch(true),
-          fetchSettings()
-        ]);
+        const candidatesQuery = query(collection(db, "candidates"), orderBy("position", "asc"));
+        const candidatesUnsubscribe = onSnapshot(candidatesQuery, (snapshot) => {
+          const candidatesList: Candidate[] = [];
+          snapshot.forEach((doc) => {
+            candidatesList.push({ id: doc.id, ...doc.data() } as Candidate);
+          });
+          setCandidates(candidatesList);
+          saveToLocalStorage('candidates', candidatesList);
+        });
+        unsubscribers.push(candidatesUnsubscribe);
+        
+        const positionsQuery = query(collection(db, "positions"), orderBy("order", "asc"));
+        const positionsUnsubscribe = onSnapshot(positionsQuery, (snapshot) => {
+          const positionsList: Position[] = [];
+          snapshot.forEach((doc) => {
+            positionsList.push({ id: doc.id, ...doc.data() } as Position);
+          });
+          setPositions(positionsList);
+          saveToLocalStorage('positions', positionsList);
+        });
+        unsubscribers.push(positionsUnsubscribe);
+        
+        const studentsQuery = query(collection(db, "students"), orderBy("name", "asc"));
+        const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
+          const studentsList: Student[] = [];
+          snapshot.forEach((doc) => {
+            studentsList.push({ id: doc.id, ...doc.data() } as Student);
+          });
+          setStudents(studentsList);
+          saveToLocalStorage('students', studentsList);
+        });
+        unsubscribers.push(studentsUnsubscribe);
+        
+        const settingsUnsubscribe = onSnapshot(doc(db, "settings", "election"), (doc) => {
+          if (doc.exists()) {
+            const settingsData = doc.data() as ElectionSettings;
+            setSettings(settingsData);
+            saveToLocalStorage('settings', settingsData);
+          }
+        });
+        unsubscribers.push(settingsUnsubscribe);
+        
         setLoading(false);
       } catch (err: any) {
-        console.error("Error loading initial data:", err);
+        console.error("Error setting up Firebase listeners:", err);
         
         if (err.code === "permission-denied") {
           setOfflineMode(true);
@@ -165,274 +176,12 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     };
 
-    setupInitialData();
+    setupFirebaseListeners();
+    
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
   }, [toast]);
-
-  const fetchCandidates = async () => {
-    try {
-      const candidatesQuery = query(
-        collection(db, "candidates"), 
-        orderBy("position", "asc")
-      );
-      
-      const snapshot = await getDocs(candidatesQuery);
-      const candidatesList: Candidate[] = [];
-      
-      snapshot.forEach((doc) => {
-        candidatesList.push({ id: doc.id, ...doc.data() } as Candidate);
-      });
-      
-      setCandidates(candidatesList);
-      saveToLocalStorage('candidates', candidatesList);
-      setLastRefreshTime(prev => ({ ...prev, candidates: Date.now() }));
-      return candidatesList;
-    } catch (error) {
-      console.error("Error fetching candidates:", error);
-      throw error;
-    }
-  };
-
-  const fetchPositions = async () => {
-    try {
-      const positionsQuery = query(
-        collection(db, "positions"), 
-        orderBy("order", "asc")
-      );
-      
-      const snapshot = await getDocs(positionsQuery);
-      const positionsList: Position[] = [];
-      
-      snapshot.forEach((doc) => {
-        positionsList.push({ id: doc.id, ...doc.data() } as Position);
-      });
-      
-      setPositions(positionsList);
-      saveToLocalStorage('positions', positionsList);
-      setLastRefreshTime(prev => ({ ...prev, positions: Date.now() }));
-      return positionsList;
-    } catch (error) {
-      console.error("Error fetching positions:", error);
-      throw error;
-    }
-  };
-
-  const fetchStudentsBatch = async (reset: boolean = false) => {
-    try {
-      let studentsQuery;
-      
-      if (reset) {
-        studentsQuery = query(
-          collection(db, "students"),
-          orderBy("name", "asc"),
-          limit(studentsPerPage)
-        );
-      } else if (studentsLastDoc) {
-        studentsQuery = query(
-          collection(db, "students"),
-          orderBy("name", "asc"),
-          limit(studentsPerPage),
-          /* @ts-ignore */
-          startAfter(studentsLastDoc)
-        );
-      } else {
-        setHasMoreStudents(false);
-        return [];
-      }
-      
-      const snapshot = await getDocs(studentsQuery);
-      
-      setHasMoreStudents(!snapshot.empty && snapshot.docs.length === studentsPerPage);
-      
-      if (!snapshot.empty) {
-        setStudentsLastDoc(snapshot.docs[snapshot.docs.length - 1]);
-      } else {
-        setStudentsLastDoc(null);
-      }
-      
-      const studentsList: Student[] = [];
-      snapshot.forEach((doc) => {
-        studentsList.push({ id: doc.id, ...doc.data() } as Student);
-      });
-      
-      if (reset) {
-        setStudents(studentsList);
-        saveToLocalStorage('students', studentsList);
-      } else {
-        const updatedStudents = [...students, ...studentsList];
-        setStudents(updatedStudents);
-        saveToLocalStorage('students', updatedStudents);
-      }
-      
-      setLastRefreshTime(prev => ({ ...prev, students: Date.now() }));
-      return studentsList;
-    } catch (error) {
-      console.error("Error fetching students:", error);
-      throw error;
-    }
-  };
-
-  const fetchSettings = async () => {
-    try {
-      const settingsDoc = await getDoc(doc(db, "settings", "election"));
-      
-      if (settingsDoc.exists()) {
-        const settingsData = settingsDoc.data() as ElectionSettings;
-        setSettings(settingsData);
-        saveToLocalStorage('settings', settingsData);
-        setLastRefreshTime(prev => ({ ...prev, settings: Date.now() }));
-        return settingsData;
-      }
-      
-      return settings;
-    } catch (error) {
-      console.error("Error fetching settings:", error);
-      throw error;
-    }
-  };
-
-  const loadMoreStudents = async () => {
-    if (!hasMoreStudents || offlineMode) return;
-    
-    try {
-      await fetchStudentsBatch(false);
-    } catch (err: any) {
-      console.error("Error loading more students:", err);
-      toast({
-        title: "Error",
-        description: `Failed to load more students: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const refreshCandidates = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    try {
-      await fetchCandidates();
-      toast({
-        title: "Success",
-        description: "Candidates refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh candidates: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const refreshPositions = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    try {
-      await fetchPositions();
-      toast({
-        title: "Success",
-        description: "Positions refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh positions: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const refreshStudents = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    try {
-      await fetchStudentsBatch(true);
-      toast({
-        title: "Success",
-        description: "Students refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh students: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const refreshSettings = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    try {
-      await fetchSettings();
-      toast({
-        title: "Success",
-        description: "Settings refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh settings: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const refreshData = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      await Promise.all([
-        fetchCandidates(),
-        fetchPositions(),
-        fetchStudentsBatch(true),
-        fetchSettings()
-      ]);
-      
-      toast({
-        title: "Success",
-        description: "All data refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh data: ${err.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const addCandidate = async (candidate: Omit<Candidate, "id" | "votes">) => {
     try {
@@ -454,21 +203,11 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       const candidateRef = doc(collection(db, "candidates"));
-      const candidateData = {
+      await setDoc(candidateRef, {
         ...candidate,
         votes: 0,
         createdAt: serverTimestamp()
-      };
-      await setDoc(candidateRef, candidateData);
-      
-      const newCandidate: Candidate = {
-        ...candidate,
-        id: candidateRef.id,
-        votes: 0
-      };
-      
-      setCandidates(prev => [...prev, newCandidate]);
-      saveToLocalStorage('candidates', [...candidates, newCandidate]);
+      });
       
       toast({
         title: "Success",
@@ -524,13 +263,6 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ...candidate,
         updatedAt: serverTimestamp()
       });
-      
-      setCandidates(prev => 
-        prev.map(c => c.id === id ? { ...c, ...candidate } : c)
-      );
-      saveToLocalStorage('candidates', candidates.map(c => 
-        c.id === id ? { ...c, ...candidate } : c
-      ));
       
       toast({
         title: "Success",
@@ -629,19 +361,10 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       const positionRef = doc(collection(db, "positions"));
-      const positionData = {
+      await setDoc(positionRef, {
         ...position,
         createdAt: serverTimestamp()
-      };
-      await setDoc(positionRef, positionData);
-      
-      const newPosition: Position = {
-        ...position,
-        id: positionRef.id
-      };
-      
-      setPositions(prev => [...prev, newPosition]);
-      saveToLocalStorage('positions', [...positions, newPosition]);
+      });
       
       toast({
         title: "Success",
@@ -859,8 +582,6 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       const batch = [];
-      const newStudentsWithIds = [];
-      
       for (const student of studentsToAdd) {
         const studentRef = doc(collection(db, "students"));
         const studentData = {
@@ -871,18 +592,9 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
         
         batch.push(setDoc(studentRef, studentData));
-        newStudentsWithIds.push({
-          ...student,
-          id: studentRef.id,
-          checkedIn: false,
-          hasVoted: false,
-        });
       }
       
       await Promise.all(batch);
-      
-      setStudents(prev => [...prev, ...newStudentsWithIds]);
-      saveToLocalStorage('students', [...students, ...newStudentsWithIds]);
       
       toast({
         title: "Success",
@@ -1111,6 +823,15 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return;
         }
         
+        if (students[studentIndex].checkedIn) {
+          toast({
+            title: "Warning",
+            description: "This student is already checked in",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         const updatedStudents = [...students];
         updatedStudents[studentIndex] = {
           ...updatedStudents[studentIndex],
@@ -1151,12 +872,21 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return;
         }
         
+        if (!students[studentIndex].checkedIn) {
+          toast({
+            title: "Warning",
+            description: "This student is not checked in",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         const updatedStudents = [...students];
         updatedStudents[studentIndex] = {
           ...updatedStudents[studentIndex],
           checkedIn: false,
-          checkedInBy: "",
-          checkedInAt: null
+          checkedInBy: undefined,
+          checkedInAt: undefined
         };
         
         setStudents(updatedStudents);
@@ -1164,23 +894,44 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         toast({
           title: "Success (Offline Mode)",
-          description: "Student unchecked successfully",
+          description: "Student check-in status has been reset",
         });
         return;
       }
       
       const studentRef = doc(db, "students", id);
-      await updateDoc(studentRef, {
-        checkedIn: false,
-        checkedInBy: "",
-        checkedInAt: null,
-        updatedAt: serverTimestamp()
-      });
+      const studentDoc = await getDoc(studentRef);
       
-      toast({
-        title: "Success",
-        description: "Student unchecked successfully",
-      });
+      if (studentDoc.exists()) {
+        const studentData = studentDoc.data() as Student;
+        
+        if (!studentData.checkedIn) {
+          toast({
+            title: "Warning",
+            description: "This student is not checked in",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        await updateDoc(studentRef, {
+          checkedIn: false,
+          checkedInBy: null,
+          checkedInAt: null,
+          updatedAt: serverTimestamp()
+        });
+        
+        toast({
+          title: "Success",
+          description: "Student check-in status has been reset",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Student not found",
+          variant: "destructive",
+        });
+      }
     } catch (err: any) {
       console.error("Error unchecking student:", err);
       
@@ -1198,12 +949,21 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return;
         }
         
+        if (!students[studentIndex].checkedIn) {
+          toast({
+            title: "Warning",
+            description: "This student is not checked in",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         const updatedStudents = [...students];
         updatedStudents[studentIndex] = {
           ...updatedStudents[studentIndex],
           checkedIn: false,
-          checkedInBy: "",
-          checkedInAt: null
+          checkedInBy: undefined,
+          checkedInAt: undefined
         };
         
         setStudents(updatedStudents);
@@ -1211,105 +971,306 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         toast({
           title: "Limited Access Mode",
-          description: "Student unchecked successfully (local only)",
+          description: "Student check-in status has been reset (local only)",
         });
       } else {
         setError(err.message);
         toast({
           title: "Error",
-          description: `Failed to uncheck student: ${err.message}`,
+          description: `Failed to reset student check-in: ${err.message}`,
           variant: "destructive",
         });
       }
     }
   };
 
-  const updateSettings = async (settings: Partial<ElectionSettings>) => {
+  const updateSettings = async (newSettings: Partial<ElectionSettings>) => {
     try {
-      const settingsDoc = await getDoc(doc(db, "settings", "election"));
+      if (offlineMode) {
+        const updatedSettings = { ...settings, ...newSettings };
+        setSettings(updatedSettings);
+        saveToLocalStorage('settings', updatedSettings);
+        
+        toast({
+          title: "Success (Offline Mode)",
+          description: "Election settings updated successfully",
+        });
+        return;
+      }
+      
+      const settingsRef = doc(db, "settings", "election");
+      const settingsDoc = await getDoc(settingsRef);
       
       if (settingsDoc.exists()) {
-        await updateDoc(settingsDoc, settings);
-        setSettings(prev => ({ ...prev, ...settings }));
-        saveToLocalStorage('settings', prev);
+        await updateDoc(settingsRef, {
+          ...newSettings,
+          updatedAt: serverTimestamp()
+        });
       } else {
-        const newSettings = {
+        await setDoc(settingsRef, {
           ...settings,
+          ...newSettings,
           createdAt: serverTimestamp()
-        };
-        await setDoc(doc(db, "settings", "election"), newSettings);
-        setSettings(newSettings);
-        saveToLocalStorage('settings', newSettings);
+        });
       }
-    } catch (err: any) {
-      console.error("Error updating settings:", err);
-      setError(err.message);
+      
       toast({
-        title: "Error",
-        description: `Failed to update settings: ${err.message}`,
-        variant: "destructive",
+        title: "Success",
+        description: "Election settings updated successfully",
       });
+    } catch (err: any) {
+      console.error("Error updating election settings:", err);
+      
+      if (err.code === "permission-denied") {
+        setOfflineMode(true);
+        const updatedSettings = { ...settings, ...newSettings };
+        setSettings(updatedSettings);
+        saveToLocalStorage('settings', updatedSettings);
+        
+        toast({
+          title: "Limited Access Mode",
+          description: "Election settings updated successfully (local only)",
+        });
+      } else {
+        setError(err.message);
+        toast({
+          title: "Error",
+          description: `Failed to update election settings: ${err.message}`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const startElection = async () => {
     try {
-      await updateSettings({ isActive: true });
+      if (offlineMode) {
+        const updatedSettings = { 
+          ...settings, 
+          isActive: true,
+          startTime: new Date()
+        };
+        setSettings(updatedSettings);
+        saveToLocalStorage('settings', updatedSettings);
+        
+        toast({
+          title: "Success (Offline Mode)",
+          description: "Election started successfully",
+        });
+        return;
+      }
+      
+      const settingsRef = doc(db, "settings", "election");
+      await updateDoc(settingsRef, {
+        isActive: true,
+        startTime: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
       toast({
         title: "Success",
         description: "Election started successfully",
       });
     } catch (err: any) {
       console.error("Error starting election:", err);
-      setError(err.message);
-      toast({
-        title: "Error",
-        description: `Failed to start election: ${err.message}`,
-        variant: "destructive",
-      });
+      
+      if (err.code === "permission-denied") {
+        setOfflineMode(true);
+        const updatedSettings = { 
+          ...settings, 
+          isActive: true,
+          startTime: new Date()
+        };
+        setSettings(updatedSettings);
+        saveToLocalStorage('settings', updatedSettings);
+        
+        toast({
+          title: "Limited Access Mode",
+          description: "Election started successfully (local only)",
+        });
+      } else {
+        setError(err.message);
+        toast({
+          title: "Error",
+          description: `Failed to start election: ${err.message}`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const endElection = async () => {
     try {
-      await updateSettings({ isActive: false });
+      if (offlineMode) {
+        const updatedSettings = { 
+          ...settings, 
+          isActive: false,
+          endTime: new Date()
+        };
+        setSettings(updatedSettings);
+        saveToLocalStorage('settings', updatedSettings);
+        
+        toast({
+          title: "Success (Offline Mode)",
+          description: "Election ended successfully",
+        });
+        return;
+      }
+      
+      const settingsRef = doc(db, "settings", "election");
+      await updateDoc(settingsRef, {
+        isActive: false,
+        endTime: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
       toast({
         title: "Success",
         description: "Election ended successfully",
       });
     } catch (err: any) {
       console.error("Error ending election:", err);
-      setError(err.message);
-      toast({
-        title: "Error",
-        description: `Failed to end election: ${err.message}`,
-        variant: "destructive",
-      });
+      
+      if (err.code === "permission-denied") {
+        setOfflineMode(true);
+        const updatedSettings = { 
+          ...settings, 
+          isActive: false,
+          endTime: new Date()
+        };
+        setSettings(updatedSettings);
+        saveToLocalStorage('settings', updatedSettings);
+        
+        toast({
+          title: "Limited Access Mode",
+          description: "Election ended successfully (local only)",
+        });
+      } else {
+        setError(err.message);
+        toast({
+          title: "Error",
+          description: `Failed to end election: ${err.message}`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const submitVote = async (votes: Omit<Vote, "id" | "timestamp">[]) => {
     try {
-      const batch = [];
+      if (offlineMode) {
+        const updatedCandidates = [...candidates];
+        
+        for (const vote of votes) {
+          const candidateIndex = updatedCandidates.findIndex(c => c.id === vote.candidateId);
+          if (candidateIndex !== -1) {
+            updatedCandidates[candidateIndex] = {
+              ...updatedCandidates[candidateIndex],
+              votes: updatedCandidates[candidateIndex].votes + 1
+            };
+          }
+        }
+        
+        setCandidates(updatedCandidates);
+        saveToLocalStorage('candidates', updatedCandidates);
+        
+        if (votes.length > 0 && votes[0].studentId) {
+          const studentId = votes[0].studentId;
+          const updatedStudents = students.map(student => 
+            student.studentId === studentId 
+              ? { ...student, hasVoted: true, votedAt: new Date() } 
+              : student
+          );
+          
+          setStudents(updatedStudents);
+          saveToLocalStorage('students', updatedStudents);
+        }
+        
+        toast({
+          title: "Success (Offline Mode)",
+          description: "Your vote has been recorded successfully",
+        });
+        return;
+      }
       
       for (const vote of votes) {
-        const voteRef = doc(collection(db, "votes"), vote.id);
+        const voteRef = doc(collection(db, "votes"));
         await setDoc(voteRef, {
           ...vote,
           timestamp: serverTimestamp()
         });
+        
+        const candidateRef = doc(db, "candidates", vote.candidateId);
+        await updateDoc(candidateRef, {
+          votes: increment(1),
+          updatedAt: serverTimestamp()
+        });
+      }
+      
+      if (votes.length > 0 && votes[0].studentId) {
+        const studentId = votes[0].studentId;
+        const studentsRef = collection(db, "students");
+        const studentQuery = query(studentsRef, where("studentId", "==", studentId));
+        const studentSnapshot = await getDocs(studentQuery);
+        
+        if (!studentSnapshot.empty) {
+          const studentDoc = studentSnapshot.docs[0];
+          await updateDoc(doc(db, "students", studentDoc.id), {
+            hasVoted: true,
+            votedAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+        }
       }
       
       toast({
         title: "Success",
-        description: "Votes submitted successfully",
+        description: "Your vote has been recorded successfully",
       });
     } catch (err: any) {
-      console.error("Error submitting votes:", err);
+      console.error("Error submitting vote:", err);
+      
+      if (err.code === "permission-denied") {
+        setOfflineMode(true);
+        
+        const updatedCandidates = [...candidates];
+        
+        for (const vote of votes) {
+          const candidateIndex = updatedCandidates.findIndex(c => c.id === vote.candidateId);
+          if (candidateIndex !== -1) {
+            updatedCandidates[candidateIndex] = {
+              ...updatedCandidates[candidateIndex],
+              votes: updatedCandidates[candidateIndex].votes + 1
+            };
+          }
+        }
+        
+        setCandidates(updatedCandidates);
+        saveToLocalStorage('candidates', updatedCandidates);
+        
+        if (votes.length > 0 && votes[0].studentId) {
+          const studentId = votes[0].studentId;
+          const updatedStudents = students.map(student => 
+            student.studentId === studentId 
+              ? { ...student, hasVoted: true, votedAt: new Date() } 
+              : student
+          );
+          
+          setStudents(updatedStudents);
+          saveToLocalStorage('students', updatedStudents);
+        }
+        
+        toast({
+          title: "Limited Access Mode",
+          description: "Your vote has been recorded successfully (local only)",
+        });
+        return;
+      }
+      
       setError(err.message);
       toast({
         title: "Error",
-        description: `Failed to submit votes: ${err.message}`,
+        description: `Failed to submit vote: ${err.message}`,
         variant: "destructive",
       });
     }
@@ -1317,33 +1278,71 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getResults = async () => {
     try {
+      if (offlineMode) {
+        const results: Record<string, Candidate[]> = {};
+        
+        candidates.forEach(candidate => {
+          if (!results[candidate.position]) {
+            results[candidate.position] = [];
+          }
+          
+          results[candidate.position].push(candidate);
+        });
+        
+        Object.keys(results).forEach(position => {
+          results[position].sort((a, b) => b.votes - a.votes);
+        });
+        
+        return results;
+      }
+      
+      const candidatesQuery = query(collection(db, "candidates"), orderBy("position", "asc"));
+      const candidatesSnapshot = await getDocs(candidatesQuery);
+      
       const results: Record<string, Candidate[]> = {};
       
-      const candidatesQuery = query(
-        collection(db, "candidates"), 
-        orderBy("position", "asc")
-      );
-      
-      const snapshot = await getDocs(candidatesQuery);
-      
-      snapshot.forEach((doc) => {
-        const candidate = doc.data() as Candidate;
-        const position = candidate.position;
+      candidatesSnapshot.forEach((doc) => {
+        const candidate = { id: doc.id, ...doc.data() } as Candidate;
         
-        if (!results[position]) {
-          results[position] = [];
+        if (!results[candidate.position]) {
+          results[candidate.position] = [];
         }
         
-        results[position].push(candidate);
+        results[candidate.position].push(candidate);
+      });
+      
+      Object.keys(results).forEach((position) => {
+        results[position].sort((a, b) => b.votes - a.votes);
       });
       
       return results;
     } catch (err: any) {
-      console.error("Error fetching results:", err);
+      console.error("Error getting results:", err);
+      
+      if (err.code === "permission-denied") {
+        setOfflineMode(true);
+        
+        const results: Record<string, Candidate[]> = {};
+        
+        candidates.forEach(candidate => {
+          if (!results[candidate.position]) {
+            results[candidate.position] = [];
+          }
+          
+          results[candidate.position].push(candidate);
+        });
+        
+        Object.keys(results).forEach(position => {
+          results[position].sort((a, b) => b.votes - a.votes);
+        });
+        
+        return results;
+      }
+      
       setError(err.message);
       toast({
         title: "Error",
-        description: `Failed to fetch results: ${err.message}`,
+        description: `Failed to get results: ${err.message}`,
         variant: "destructive",
       });
       return {};
@@ -1352,209 +1351,137 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const resetElection = async (password: string) => {
     try {
-      if (password !== "1234") {
-        throw new Error("Invalid password");
+      if (password !== "akshatmygoat") {
+        toast({
+          title: "Error",
+          description: "Invalid reset password",
+          variant: "destructive",
+        });
+        return;
       }
-      
-      await updateSettings({ isActive: false });
+
+      if (offlineMode) {
+        setCandidates([]);
+        setPositions([]);
+        const resetStudents = students.map(student => ({
+          ...student,
+          checkedIn: false,
+          checkedInBy: undefined,
+          checkedInAt: undefined,
+          hasVoted: false,
+          votedAt: undefined
+        }));
+        setStudents(resetStudents);
+        
+        saveToLocalStorage('candidates', []);
+        saveToLocalStorage('positions', []);
+        saveToLocalStorage('students', resetStudents);
+        
+        toast({
+          title: "Success (Offline Mode)",
+          description: "Election data has been reset",
+        });
+        return;
+      }
+
+      // Reset candidates
+      const candidatesSnapshot = await getDocs(collection(db, "candidates"));
+      const candidatePromises = candidatesSnapshot.docs.map(doc => 
+        updateDoc(doc.ref, { deleted: true, deletedAt: serverTimestamp() })
+      );
+      await Promise.all(candidatePromises);
+
+      // Reset positions
+      const positionsSnapshot = await getDocs(collection(db, "positions"));
+      const positionPromises = positionsSnapshot.docs.map(doc => 
+        updateDoc(doc.ref, { deleted: true, deletedAt: serverTimestamp() })
+      );
+      await Promise.all(positionPromises);
+
+      // Reset students
+      const studentsSnapshot = await getDocs(collection(db, "students"));
+      const studentPromises = studentsSnapshot.docs.map(doc => 
+        updateDoc(doc.ref, {
+          checkedIn: false,
+          checkedInBy: null,
+          checkedInAt: null,
+          hasVoted: false,
+          votedAt: null,
+          updatedAt: serverTimestamp()
+        })
+      );
+      await Promise.all(studentPromises);
+
       toast({
         title: "Success",
-        description: "Election reset successfully",
+        description: "Election data has been reset",
       });
     } catch (err: any) {
       console.error("Error resetting election:", err);
-      setError(err.message);
-      toast({
-        title: "Error",
-        description: `Failed to reset election: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const refreshData = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      await Promise.all([
-        fetchCandidates(),
-        fetchPositions(),
-        fetchStudentsBatch(true),
-        fetchSettings()
-      ]);
       
-      toast({
-        title: "Success",
-        description: "All data refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh data: ${err.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      if (err.code === "permission-denied") {
+        setOfflineMode(true);
+        setCandidates([]);
+        setPositions([]);
+        const resetStudents = students.map(student => ({
+          ...student,
+          checkedIn: false,
+          checkedInBy: undefined,
+          checkedInAt: undefined,
+          hasVoted: false,
+          votedAt: undefined
+        }));
+        setStudents(resetStudents);
+        
+        saveToLocalStorage('candidates', []);
+        saveToLocalStorage('positions', []);
+        saveToLocalStorage('students', resetStudents);
+        
+        toast({
+          title: "Limited Access Mode",
+          description: "Election data has been reset (local only)",
+        });
+      } else {
+        setError(err.message);
+        toast({
+          title: "Error",
+          description: `Failed to reset election: ${err.message}`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const refreshCandidates = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    try {
-      await fetchCandidates();
-      toast({
-        title: "Success",
-        description: "Candidates refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh candidates: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const refreshPositions = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    try {
-      await fetchPositions();
-      toast({
-        title: "Success",
-        description: "Positions refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh positions: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const refreshStudents = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    try {
-      await fetchStudentsBatch(true);
-      toast({
-        title: "Success",
-        description: "Students refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh students: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const refreshSettings = async () => {
-    if (offlineMode) {
-      toast({
-        title: "Offline Mode",
-        description: "Cannot refresh data in offline mode",
-      });
-      return;
-    }
-    
-    try {
-      await fetchSettings();
-      toast({
-        title: "Success",
-        description: "Settings refreshed successfully",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to refresh settings: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const loadMoreStudents = async () => {
-    if (!hasMoreStudents || offlineMode) return;
-    
-    try {
-      await fetchStudentsBatch(false);
-    } catch (err: any) {
-      console.error("Error loading more students:", err);
-      toast({
-        title: "Error",
-        description: `Failed to load more students: ${err.message}`,
-        variant: "destructive",
-      });
-    }
+  const value: ElectionContextType = {
+    candidates,
+    positions,
+    students,
+    settings,
+    loading,
+    error,
+    addCandidate,
+    updateCandidate,
+    removeCandidate,
+    addPosition,
+    updatePosition,
+    removePosition,
+    addStudent,
+    addStudents,
+    updateStudent,
+    removeStudent,
+    checkInStudent,
+    uncheckStudent,
+    updateSettings,
+    startElection,
+    endElection,
+    submitVote,
+    getResults,
+    resetElection,
   };
 
   return (
-    <ElectionContext.Provider
-      value={{
-        candidates,
-        positions,
-        students,
-        settings,
-        loading,
-        error,
-        addCandidate,
-        updateCandidate,
-        removeCandidate,
-        addPosition,
-        updatePosition,
-        removePosition,
-        addStudent,
-        addStudents,
-        updateStudent,
-        removeStudent,
-        checkInStudent,
-        uncheckStudent,
-        updateSettings,
-        startElection,
-        endElection,
-        submitVote,
-        getResults,
-        resetElection,
-        refreshData,
-        refreshCandidates,
-        refreshPositions,
-        refreshStudents,
-        refreshSettings,
-        loadMoreStudents,
-        hasMoreStudents
-      }}
-    >
+    <ElectionContext.Provider value={value}>
       {children}
     </ElectionContext.Provider>
   );
 };
-
-export default ElectionProvider;

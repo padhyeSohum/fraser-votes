@@ -16,10 +16,6 @@ export interface Candidate {
   photoURL: string;
   description?: string;
   votes: number;
-  createdAt?: Date; // Added createdAt
-  updatedAt?: Date; // Added updatedAt
-  deleted?: boolean; // Added deleted flag
-  deletedAt?: Date; // Added deletedAt
 }
 
 // Position/Category types
@@ -28,10 +24,6 @@ export interface Position {
   title: string;
   description?: string;
   order: number;
-  createdAt?: Date; // Added createdAt
-  updatedAt?: Date; // Added updatedAt
-  deleted?: boolean; // Added deleted flag
-  deletedAt?: Date; // Added deletedAt
 }
 
 // Student types
@@ -44,11 +36,6 @@ export interface Student {
   checkedInBy?: string;
   checkedInAt?: Date;
   hasVoted: boolean;
-  votedAt?: Date; // Added votedAt
-  createdAt?: Date; // Added createdAt
-  updatedAt?: Date; // Added updatedAt
-  deleted?: boolean; // Added deleted flag
-  deletedAt?: Date; // Added deletedAt
 }
 
 // Pin access code
@@ -70,8 +57,6 @@ export interface ElectionSettings {
   description?: string;
   allowMultipleVotes: boolean;
   pins?: PinAccess[];  // New field for multiple pins
-  createdAt?: Date; // Added createdAt
-  updatedAt?: Date; // Added updatedAt
 }
 
 // Vote record
