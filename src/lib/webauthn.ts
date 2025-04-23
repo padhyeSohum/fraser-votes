@@ -109,7 +109,11 @@ export const authenticateWithPasskey = async (userId: string) => {
       throw new Error('Unknown passkey');
     }
     
-    return { success: true, verified: true };
+    return { 
+      success: true, 
+      verified: true, 
+      credentialId: credentialId 
+    };
   } catch (error) {
     console.error('Error authenticating with passkey:', error);
     return { success: false, error };
