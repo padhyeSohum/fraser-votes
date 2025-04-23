@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,12 +16,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, ListPlus, Power, KeyRound, Lock, Check, X } from "lucide-react";
+import { Trash2, UserPlus, ListPlus, Power, Lock } from "lucide-react";
 import StudentManagement from "@/components/admin/StudentManagement";
 import UserManagement from "@/components/admin/UserManagement";
 import SecurityKeyManagement from "@/components/admin/SecurityKeyManagement";
+import SecurityKeyVerification from "@/components/election/SecurityKeyVerification";
 import { useToast } from "@/hooks/use-toast";
-import { Position } from "@/types";
 
 const Admin = () => {
   const { userData, isSuperAdmin } = useAuth();
@@ -36,17 +35,16 @@ const Admin = () => {
   const [isStartStopVerificationOpen, setIsStartStopVerificationOpen] = useState(false);
   const [pendingElectionAction, setPendingElectionAction] = useState<'start' | 'stop' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [securityPassword, setSecurityPassword] = useState("");
-  const [showSecurityPasswordModal, setShowSecurityPasswordModal] = useState(false);
-  const [securityPasswordError, setSecurityPasswordError] = useState("");
-  const [securityPasswordVerified, setSecurityPasswordVerified] = useState(false);
 
   const { 
+    election, 
     positions, 
     startElection, 
     endElection, 
     addPosition, 
     removePosition,
+    fetchElectionStatus,
+    fetchPositions
   } = useElection();
 
   useEffect(() => {
@@ -56,19 +54,16 @@ const Admin = () => {
   }, [userData, isSuperAdmin, navigate]);
 
   useEffect(() => {
-    const fetchElectionData = async () => {
+    const checkElectionStatus = async () => {
       setIsLoading(true);
       try {
-        // Note: Since fetchElectionStatus and fetchPositions don't exist in the ElectionContext type,
-        // we'll just set isElectionActive directly when implementing real functionality
-        
-        // For example purposes only:
-        setIsElectionActive(false);
+        await fetchElectionStatus();
+        setIsElectionActive(election?.active || false);
       } catch (error) {
-        console.error("Error fetching election data:", error);
+        console.error("Error fetching election status:", error);
         toast({
           title: "Error",
-          description: "Failed to fetch election data",
+          description: "Failed to fetch election status",
           variant: "destructive",
         });
       } finally {
@@ -76,26 +71,31 @@ const Admin = () => {
       }
     };
 
-    fetchElectionData();
-  }, [toast]);
+    checkElectionStatus();
+  }, [fetchElectionStatus, election?.active, toast]);
+
+  useEffect(() => {
+    const loadPositions = async () => {
+      setIsLoading(true);
+      try {
+        await fetchPositions();
+      } catch (error) {
+        console.error("Error fetching positions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch positions",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPositions();
+  }, [fetchPositions, toast]);
 
   const handleTabChange = (value: string) => {
-    if (value === "security" && !securityPasswordVerified) {
-      setShowSecurityPasswordModal(true);
-      return; // Don't change the tab yet
-    }
     setTab(value);
-  };
-
-  const handleSecurityPasswordSubmit = () => {
-    if (securityPassword === "akshatmygoat") {
-      setSecurityPasswordVerified(true);
-      setShowSecurityPasswordModal(false);
-      setSecurityPasswordError("");
-      setTab("security");
-    } else {
-      setSecurityPasswordError("Incorrect password");
-    }
   };
 
   const handleAddPositionOpen = () => {
@@ -122,8 +122,7 @@ const Admin = () => {
     }
 
     try {
-      // Fix the type error by passing an object with a name property
-      await addPosition({ name: newPositionName.trim() } as unknown as Position);
+      await addPosition(newPositionName.trim());
       toast({
         title: "Success",
         description: `${newPositionName.trim()} position added successfully`,
@@ -225,7 +224,7 @@ const Admin = () => {
             <ul className="list-none pl-0">
               {positions && positions.map((position) => (
                 <li key={position.id} className="py-2 border-b border-gray-200 flex items-center justify-between">
-                  <span>{position.title || position.id}</span>
+                  <span>{position.name}</span>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" size="sm">
@@ -237,7 +236,7 @@ const Admin = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the {position.title || position.id} position and remove all associated data.
+                          This action cannot be undone. This will permanently delete the {position.name} position and remove all associated data.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -255,45 +254,6 @@ const Admin = () => {
           <SecurityKeyManagement />
         </TabsContent>
       </Tabs>
-
-      {/* Security Password Modal */}
-      <AlertDialog open={showSecurityPasswordModal} onOpenChange={setShowSecurityPasswordModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Security Verification</AlertDialogTitle>
-            <AlertDialogDescription>
-              Enter the security password to access the security keys management
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Input 
-                type="password" 
-                placeholder="Password" 
-                value={securityPassword} 
-                onChange={(e) => setSecurityPassword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSecurityPasswordSubmit();
-                  }
-                }}
-              />
-              {securityPasswordError && (
-                <div className="text-red-500 text-sm flex items-center">
-                  <X className="h-4 w-4 mr-1" /> {securityPasswordError}
-                </div>
-              )}
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setSecurityPassword("");
-              setSecurityPasswordError("");
-            }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSecurityPasswordSubmit}>Verify</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog open={isAddPositionOpen} onOpenChange={setIsAddPositionOpen}>
         <AlertDialogContent>
@@ -320,7 +280,6 @@ const Admin = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Use proper props for SecurityKeyVerification component */}
       <AlertDialog open={isStartStopVerificationOpen} onOpenChange={setIsStartStopVerificationOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -329,21 +288,10 @@ const Admin = () => {
               Please verify your security key to {pendingElectionAction === 'start' ? 'start' : 'stop'} the election.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex items-center justify-center p-4">
-            <Button 
-              onClick={handleElectionKeyVerificationSuccess}
-              className="mr-2"
-            >
-              <KeyRound className="h-4 w-4 mr-2" />
-              Simulate Key Verification
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={handleElectionKeyVerificationCancel}
-            >
-              Cancel
-            </Button>
-          </div>
+          <SecurityKeyVerification 
+            onSuccess={handleElectionKeyVerificationSuccess}
+            onCancel={handleElectionKeyVerificationCancel}
+          />
         </AlertDialogContent>
       </AlertDialog>
     </div>
