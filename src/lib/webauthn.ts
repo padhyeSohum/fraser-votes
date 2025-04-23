@@ -1,34 +1,22 @@
 
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
-export interface SecurityKeyCredential {
+export interface PasskeyCredential {
   id: string;
   publicKey: string;
-  name: string;
+  userHandle: string;
   createdAt: any;
   userId: string;
+  deviceName?: string;
 }
 
-export const generateChallenge = (): string => {
-  const arr = new Uint8Array(32);
-  window.crypto.getRandomValues(arr);
-  return arrayBufferToBase64URL(arr.buffer);
-};
-
-export const registerSecurityKey = async (userId: string, keyName: string) => {
+export const registerPasskey = async (userId: string, deviceName?: string) => {
   try {
     const challenge = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challenge);
     
-    const existingCredentials = await getSecurityKeyCredentials(userId);
-    const excludeCredentials = existingCredentials.map(cred => ({
-      id: cred.id,
-      type: 'public-key' as const,
-      transports: ['usb', 'ble', 'nfc', 'internal'] as AuthenticatorTransport[]
-    }));
-
     const registrationOptions = {
       challenge,
       rp: {
@@ -38,142 +26,113 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
       user: {
         id: userId,
         name: userId,
-        displayName: keyName
+        displayName: deviceName || 'FraserVotes Passkey'
       },
       pubKeyCredParams: [
-        { type: 'public-key' as const, alg: -7 },
-        { type: 'public-key' as const, alg: -257 },
+        { type: 'public-key' as const, alg: -7 },   // ES256
+        { type: 'public-key' as const, alg: -257 }, // RS256
       ],
       authenticatorSelection: {
-        authenticatorAttachment: 'cross-platform' as const,
-        userVerification: 'required' as const,
-        residentKey: 'preferred' as const
+        authenticatorAttachment: "platform" as const,
+        requireResidentKey: true,
+        residentKey: "required" as const,
+        userVerification: "required" as const
       },
       timeout: 60000,
-      attestation: 'none' as const,
-      excludeCredentials
+      attestation: 'none' as const
     };
 
-    // Fix the type error by using the correct types for startRegistration
     const registration = await startRegistration(registrationOptions);
     
-    const credential: SecurityKeyCredential = {
-      id: arrayBufferToBase64URL(registration.rawId),
+    const credential: PasskeyCredential = {
+      id: btoa(String.fromCharCode(...new Uint8Array(registration.rawId))),
       publicKey: btoa(JSON.stringify(registration)),
-      name: keyName,
+      userHandle: userId,
       createdAt: new Date(),
-      userId
+      userId,
+      deviceName
     };
 
-    const keyRef = doc(collection(db, "securityKeys"));
+    const keyRef = doc(collection(db, "passkeys"));
     await setDoc(keyRef, credential);
     
     return { success: true, credential };
   } catch (error) {
-    console.error('Error registering security key:', error);
+    console.error('Error registering passkey:', error);
     return { success: false, error };
   }
 };
 
-export const authenticateWithSecurityKey = async (userId: string) => {
+export const authenticateWithPasskey = async (userId: string) => {
   try {
     const challenge = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challenge);
-    
-    const existingCredentials = await getSecurityKeyCredentials(userId);
-    if (existingCredentials.length === 0) {
-      throw new Error('No security keys registered for this user');
-    }
-
-    const allowCredentials = existingCredentials.map(cred => ({
-      id: cred.id,
-      type: 'public-key' as const,
-      transports: ['usb', 'ble', 'nfc', 'internal'] as AuthenticatorTransport[]
-    }));
 
     const authOptions = {
       challenge,
       rpId: window.location.hostname,
-      allowCredentials,
       timeout: 60000,
       userVerification: 'required' as const
     };
 
-    // Fix the type error by using the correct types for startAuthentication
     const authentication = await startAuthentication(authOptions);
+    const credentialIdBase64 = btoa(String.fromCharCode(...new Uint8Array(authentication.rawId)));
     
-    const credentialIdBase64 = arrayBufferToBase64URL(authentication.rawId);
-    const matchedCredential = existingCredentials.find(cred => cred.id === credentialIdBase64);
+    const q = query(collection(db, "passkeys"), where("id", "==", credentialIdBase64));
+    const querySnapshot = await getDocs(q);
     
-    if (!matchedCredential) {
-      throw new Error('Unknown security key');
+    if (querySnapshot.empty) {
+      throw new Error('Unknown passkey');
     }
     
     return { success: true, verified: true };
   } catch (error) {
-    console.error('Error authenticating with security key:', error);
+    console.error('Error authenticating with passkey:', error);
     return { success: false, error };
   }
 };
 
-export const getSecurityKeyCredentials = async (userId: string): Promise<SecurityKeyCredential[]> => {
+export const getPasskeys = async (userId: string): Promise<PasskeyCredential[]> => {
   try {
-    const q = query(collection(db, "securityKeys"), where("userId", "==", userId));
+    const q = query(collection(db, "passkeys"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
     
-    const credentials: SecurityKeyCredential[] = [];
+    const credentials: PasskeyCredential[] = [];
     querySnapshot.forEach((doc) => {
-      credentials.push(doc.data() as SecurityKeyCredential);
+      credentials.push(doc.data() as PasskeyCredential);
     });
     
     return credentials;
   } catch (error) {
-    console.error('Error fetching security keys:', error);
+    console.error('Error fetching passkeys:', error);
     return [];
   }
 };
 
-export const removeSecurityKey = async (credentialId: string) => {
+export const removePasskey = async (credentialId: string) => {
   try {
-    const q = query(collection(db, "securityKeys"), where("id", "==", credentialId));
+    const q = query(collection(db, "passkeys"), where("id", "==", credentialId));
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
-      return { success: false, error: 'Security key not found' };
+      return { success: false, error: 'Passkey not found' };
     }
     
-    const docRef = doc(db, "securityKeys", querySnapshot.docs[0].id);
-    await updateDoc(docRef, {
+    const docRef = doc(db, "passkeys", querySnapshot.docs[0].id);
+    await setDoc(docRef, {
       deleted: true,
       deletedAt: new Date()
-    });
+    }, { merge: true });
     
     return { success: true };
   } catch (error) {
-    console.error('Error removing security key:', error);
+    console.error('Error removing passkey:', error);
     return { success: false, error };
   }
 };
 
-function arrayBufferToBase64URL(buffer: ArrayBuffer): string {
-  const binary = String.fromCharCode(...new Uint8Array(buffer));
-  const base64 = btoa(binary);
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+function generateChallenge(): string {
+  const array = new Uint8Array(32);
+  window.crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...array));
 }
-
-function base64URLToArrayBuffer(base64URLString: string): ArrayBuffer {
-  const base64 = base64URLString.replace(/-/g, '+').replace(/_/g, '/');
-  const padLen = (4 - (base64.length % 4)) % 4;
-  const padded = base64 + '='.repeat(padLen);
-  
-  const binary = atob(padded);
-  const array = new Uint8Array(binary.length);
-  
-  for (let i = 0; i < binary.length; i++) {
-    array[i] = binary.charCodeAt(i);
-  }
-  
-  return array.buffer;
-}
-
-type AuthenticatorTransport = 'usb' | 'ble' | 'nfc' | 'internal';
