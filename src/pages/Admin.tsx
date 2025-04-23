@@ -20,6 +20,7 @@ import StudentManagement from "@/components/admin/StudentManagement";
 import UserManagement from "@/components/admin/UserManagement";
 import SecurityKeyManagement from "@/components/admin/SecurityKeyManagement";
 import SecurityKeyVerification from "@/components/election/SecurityKeyVerification";
+import PinManagement from "@/components/admin/PinManagement";
 import { useToast } from "@/hooks/use-toast";
 
 const Admin = () => {

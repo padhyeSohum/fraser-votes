@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { PinAccess } from "@/types";
-import { Plus, Key, Toggle } from "lucide-react";
+import { Plus, Key, ToggleLeft, ToggleRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const PinManagement = () => {
@@ -139,7 +139,10 @@ const PinManagement = () => {
                     size="sm"
                     onClick={() => handleTogglePinStatus(pin.id)}
                   >
-                    <Toggle className="h-4 w-4 mr-2" />
+                    {pin.isActive ? 
+                      <ToggleRight className="h-4 w-4 mr-2" /> : 
+                      <ToggleLeft className="h-4 w-4 mr-2" />
+                    }
                     {pin.isActive ? "Enabled" : "Disabled"}
                   </Button>
                   <Button
