@@ -417,6 +417,10 @@ const Admin = () => {
                   <Shield className="h-4 w-4 mr-2" />
                   Security
                 </TabsTrigger>
+                <TabsTrigger value="pins" className="rounded-sm px-4 py-2 hover:text-foreground data-[state=active]:text-primary">
+                  <Key className="h-4 w-4 mr-2" />
+                  PIN Access
+                </TabsTrigger>
               </>
             )}
             <TabsTrigger value="users" className="rounded-sm px-4 py-2 hover:text-foreground data-[state=active]:text-primary">
@@ -835,6 +839,21 @@ const Admin = () => {
           {isSuperAdmin() && (
             <TabsContent value="security">
               <SecurityKeyManagement />
+            </TabsContent>
+          )}
+          
+          {isSuperAdmin() && (
+            <TabsContent value="pins">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold">PIN Access Management</h2>
+              </div>
+              <SecurityKeyVerification
+                open={isKeyVerificationOpen}
+                onOpenChange={setIsKeyVerificationOpen}
+                onSuccess={handleKeyVerificationSuccess}
+                onCancel={handleKeyVerificationCancel}
+              />
+              <PinManagement />
             </TabsContent>
           )}
           
