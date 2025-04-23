@@ -35,7 +35,7 @@ interface AuthContextType {
   userData: UserData | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithPasskey: () => Promise<boolean>;
+  signInWithPasskey: (role?: "superadmin" | "admin" | "staff") => Promise<boolean>;
   logout: () => Promise<void>;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
@@ -271,16 +271,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithPasskey = async (): Promise<boolean> => {
+  const signInWithPasskey = async (role: "superadmin" | "admin" | "staff" = "admin"): Promise<boolean> => {
     try {
-      console.log("Signing in with security key");
+      console.log("Signing in with security key as:", role);
       
       await signInAnonymously(auth);
       
       const securityKeyUserData: UserData = {
         email: "security-key@frasersecondary.org",
-        role: "admin",
-        displayName: "Security Key User",
+        role: role,
+        displayName: `Security Key User (${role})`,
         authorized: true
       };
       
@@ -288,7 +288,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({
         title: "Success",
-        description: "Signed in with security key",
+        description: `Signed in with security key as ${role}`,
       });
       
       return true;
