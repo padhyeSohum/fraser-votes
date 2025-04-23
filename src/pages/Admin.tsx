@@ -19,8 +19,8 @@ import Header from "@/components/Header";
 import StudentManagement from "@/components/admin/StudentManagement";
 import UserManagement from "@/components/admin/UserManagement";
 import SecurityKeyManagement from "@/components/admin/SecurityKeyManagement";
-import SecurityKeyVerification from "@/components/admin/SecurityKeyVerification";
-import { toast } from "@/components/ui/use-toast";
+import SecurityKeyVerification from "@/components/election/SecurityKeyVerification";
+import { useToast } from "@/hooks/use-toast";
 
 const Admin = () => {
   const { userData, isSuperAdmin } = useAuth();
@@ -57,6 +57,8 @@ const Admin = () => {
   const [securityPassword, setSecurityPassword] = useState("");
   const [isSecurityPasswordDialogOpen, setIsSecurityPasswordDialogOpen] = useState(false);
   const [isSecurityTabVerified, setIsSecurityTabVerified] = useState(false);
+  const [isStartStopVerificationOpen, setIsStartStopVerificationOpen] = useState(false);
+  const [pendingElectionAction, setPendingElectionAction] = useState<'start' | 'stop' | null>(null);
   
   const [newPosition, setNewPosition] = useState<Omit<Position, "id">>({
     title: "",
@@ -265,6 +267,32 @@ const Admin = () => {
     }
   };
 
+  const handleElectionControl = (action: 'start' | 'stop') => {
+    setPendingElectionAction(action);
+    setIsStartStopVerificationOpen(true);
+  };
+
+  const handleElectionKeyVerificationSuccess = async () => {
+    if (pendingElectionAction === 'start') {
+      await startElection();
+    } else if (pendingElectionAction === 'stop') {
+      await endElection();
+    }
+    
+    setIsStartStopVerificationOpen(false);
+    setPendingElectionAction(null);
+    
+    toast({
+      title: "Success",
+      description: `Election ${pendingElectionAction === 'start' ? 'started' : 'stopped'} successfully`,
+    });
+  };
+
+  const handleElectionKeyVerificationCancel = () => {
+    setIsStartStopVerificationOpen(false);
+    setPendingElectionAction(null);
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -284,11 +312,18 @@ const Admin = () => {
               <Button 
                 variant={settings.isActive ? "destructive" : "default"}
                 className="shadow-sm"
-                onClick={settings.isActive ? endElection : startElection}
+                onClick={() => handleElectionControl(settings.isActive ? 'stop' : 'start')}
               >
                 <Power className="h-4 w-4 mr-2" />
                 {settings.isActive ? 'End Voting' : 'Start Voting'}
               </Button>
+              
+              <SecurityKeyVerification
+                open={isStartStopVerificationOpen}
+                onOpenChange={setIsStartStopVerificationOpen}
+                onSuccess={handleElectionKeyVerificationSuccess}
+                onCancel={handleElectionKeyVerificationCancel}
+              />
               
               <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
                 <AlertDialogTrigger asChild>
