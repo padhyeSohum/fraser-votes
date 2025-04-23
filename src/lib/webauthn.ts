@@ -31,32 +31,32 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
     const existingCredentials = await getSecurityKeyCredentials(userId);
     const excludeCredentials = existingCredentials.map(cred => ({
       id: Uint8Array.from(atob(cred.id), c => c.charCodeAt(0)),
-      type: 'public-key',
+      type: 'public-key' as const,
     }));
 
     // Start registration process
     const registrationOptions = {
-      challenge: Uint8Array.from(challenge, c => c.charCodeAt(0)),
+      challenge: base64URLStringToUint8Array(challenge),
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
       },
       user: {
-        id: Uint8Array.from(userId, c => c.charCodeAt(0)),
+        id: base64URLStringToUint8Array(userId),
         name: userId,
         displayName: keyName
       },
       pubKeyCredParams: [
-        { type: 'public-key', alg: -7 }, // ES256
-        { type: 'public-key', alg: -257 }, // RS256
+        { type: 'public-key' as const, alg: -7 }, // ES256
+        { type: 'public-key' as const, alg: -257 }, // RS256
       ],
       authenticatorSelection: {
-        authenticatorAttachment: 'cross-platform',
-        userVerification: 'required',
-        residentKey: 'preferred'
+        authenticatorAttachment: 'cross-platform' as const,
+        userVerification: 'required' as const,
+        residentKey: 'preferred' as const
       },
       timeout: 60000,
-      attestation: 'none',
+      attestation: 'none' as const,
       excludeCredentials
     };
 
@@ -65,7 +65,7 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
     
     // Store the credential in Firestore
     const credential: SecurityKeyCredential = {
-      id: btoa(String.fromCharCode(...new Uint8Array(registration.rawId))),
+      id: arrayBufferToBase64(registration.rawId),
       publicKey: btoa(JSON.stringify(registration)),
       name: keyName,
       createdAt: new Date(),
@@ -100,23 +100,23 @@ export const authenticateWithSecurityKey = async (userId: string) => {
 
     const allowCredentials = existingCredentials.map(cred => ({
       id: Uint8Array.from(atob(cred.id), c => c.charCodeAt(0)),
-      type: 'public-key',
+      type: 'public-key' as const,
     }));
 
     // Start authentication process
     const authOptions = {
-      challenge: Uint8Array.from(challenge, c => c.charCodeAt(0)),
+      challenge: base64URLStringToUint8Array(challenge),
       rpId: window.location.hostname,
       allowCredentials,
       timeout: 60000,
-      userVerification: 'required'
+      userVerification: 'required' as const
     };
 
     // Start the authentication process
     const authentication = await startAuthentication(authOptions);
     
     // Verify the credential ID matches one of our stored credentials
-    const credentialIdBase64 = btoa(String.fromCharCode(...new Uint8Array(authentication.rawId)));
+    const credentialIdBase64 = arrayBufferToBase64(authentication.rawId);
     const matchedCredential = existingCredentials.find(cred => cred.id === credentialIdBase64);
     
     if (!matchedCredential) {
@@ -171,3 +171,26 @@ export const removeSecurityKey = async (credentialId: string) => {
     return { success: false, error };
   }
 };
+
+// Helper function to convert string to Uint8Array for WebAuthn
+function base64URLStringToUint8Array(base64URLString: string): Uint8Array {
+  // Base64 URL decoding
+  const base64 = base64URLString.replace(/-/g, '+').replace(/_/g, '/');
+  const padLen = (4 - (base64.length % 4)) % 4;
+  const padded = base64 + '='.repeat(padLen);
+  
+  const binary = atob(padded);
+  const array = new Uint8Array(binary.length);
+  
+  for (let i = 0; i < binary.length; i++) {
+    array[i] = binary.charCodeAt(i);
+  }
+  
+  return array;
+}
+
+// Helper function to convert ArrayBuffer to Base64 string
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const binary = String.fromCharCode(...new Uint8Array(buffer));
+  return btoa(binary);
+}
