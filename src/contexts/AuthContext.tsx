@@ -1,14 +1,16 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { 
   GoogleAuthProvider, 
   signInWithPopup, 
   signOut, 
   onAuthStateChanged, 
-  User
+  User,
+  signInWithEmailAndPassword
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserData {
   email: string;
@@ -32,6 +34,7 @@ interface AuthContextType {
   userData: UserData | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithPasskey: (userId: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;

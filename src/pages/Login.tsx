@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,15 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogIn, AlertCircle, KeyRound } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import { authenticateWithPasskey } from "@/lib/webauthn";
 import { useToast } from "@/hooks/use-toast";
-import { signInWithCustomToken } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 
 const Login = () => {
   const {
     signInWithGoogle,
+    signInWithPasskey,
     currentUser
   } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -61,60 +58,20 @@ const Login = () => {
         throw new Error(result.error || "Security key verification failed");
       }
       
-      // If verification is successful, check if this security key is registered in Firebase
-      const { db } = await import('@/lib/firebase');
-      const { collection, query, where, getDocs, getDoc, doc } = await import('firebase/firestore');
-      
-      // Query Firestore to find a user with this security key
-      const passkeysRef = collection(db, "passkeys");
-      const q = query(passkeysRef, where("id", "==", result.credentialId));
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        throw new Error("This security key is not registered with any account");
-      }
-
-      // Get the first document that matches
-      const passkeyData = querySnapshot.docs[0].data();
-      const userId = passkeyData.userId;
-      
-      if (!userId) {
-        throw new Error("Security key doesn't have a valid user association");
+      if (!result.userId) {
+        throw new Error("No user associated with this security key");
       }
       
-      // Get user document
-      const userDoc = await getDoc(doc(db, "users", userId));
+      console.log("Security key verified, user ID:", result.userId);
       
-      if (!userDoc.exists()) {
-        throw new Error("User account not found");
-      }
+      // Use the auth context to sign in with passkey
+      const signInSuccess = await signInWithPasskey(result.userId);
       
-      // Create a custom authentication token (this would normally be done on a secure backend)
-      // Since we can't create custom tokens from the client side, we'll use the existing user session
-      // This is a simplification for demo purposes - in production, use Firebase Functions or a secure backend
-      try {
-        // For demonstration, we'll try to sign in with the user ID
-        // NOTE: In production, you should authenticate through a secure backend
-        // that verifies the security key and issues a custom token
-        
-        // For now, we'll manually fetch and use the user's credentials from Firestore
-        // THIS IS NOT SECURE FOR PRODUCTION - use only for development/demo
-        
-        // Simulate signing in
-        toast({
-          title: "Security Key Verified",
-          description: "Successfully authenticated with security key.",
-        });
-        
-        // Redirect to home page as if we were authenticated
-        navigate("/");
-        
-        return;
-      } catch (signInError) {
-        console.error("Error signing in with user ID:", signInError);
+      if (!signInSuccess) {
         throw new Error("Failed to authenticate with security key");
       }
       
+      // Auth context will handle redirecting after successful login
     } catch (error: any) {
       console.error("Error signing in with security key:", error);
       setError(error.message || "Failed to verify security key");

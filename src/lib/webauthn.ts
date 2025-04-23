@@ -135,6 +135,8 @@ export const authenticateWithPasskey = async (userId: string, purpose?: 'electio
     const passkeyData = querySnapshot.docs[0].data() as PasskeyCredential;
     const passkeyUserId = passkeyData.userId;
     
+    console.log("Found passkey for user:", passkeyUserId);
+    
     // Return the successful authentication with credential ID and user ID
     return { 
       success: true, 
