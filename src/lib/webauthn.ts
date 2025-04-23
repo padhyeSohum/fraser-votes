@@ -29,11 +29,12 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
     
     // Get existing registered credentials for this user to prevent duplicates
     const existingCredentials = await getSecurityKeyCredentials(userId);
+    
+    // Properly define transports with correct type
     const excludeCredentials = existingCredentials.map(cred => ({
-      id: cred.id, // Keep as base64URL string for SimpleWebAuthn
+      id: cred.id, // Use the base64URL string for SimpleWebAuthn
       type: 'public-key' as const,
-      // Use array instead of readonly tuple to satisfy SimpleWebAuthn types
-      transports: ['usb', 'ble', 'nfc', 'internal'] as string[]
+      transports: ['usb', 'ble', 'nfc', 'internal'] as ('usb' | 'ble' | 'nfc' | 'internal')[]
     }));
 
     // Start registration process
@@ -100,11 +101,11 @@ export const authenticateWithSecurityKey = async (userId: string) => {
       throw new Error('No security keys registered for this user');
     }
 
+    // Properly define transports with correct type
     const allowCredentials = existingCredentials.map(cred => ({
-      id: cred.id, // Keep as base64URL string for SimpleWebAuthn
+      id: cred.id, // Use the base64URL string for SimpleWebAuthn
       type: 'public-key' as const,
-      // Use array instead of readonly tuple to satisfy SimpleWebAuthn types
-      transports: ['usb', 'ble', 'nfc', 'internal'] as string[]
+      transports: ['usb', 'ble', 'nfc', 'internal'] as ('usb' | 'ble' | 'nfc' | 'internal')[]
     }));
 
     // Start authentication process
