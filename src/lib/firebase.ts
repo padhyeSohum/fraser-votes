@@ -1,7 +1,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, CollectionReference, DocumentData, collection } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
 // Firebase configuration with provided credentials
@@ -21,4 +21,18 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-export { app, auth, db, analytics };
+// Helper function to add types to Firestore collections
+const createCollection = <T = DocumentData>(collectionName: string) => {
+  return collection(db, collectionName) as CollectionReference<T>;
+};
+
+// Create typed collections
+const securityKeysCollection = createCollection<{
+  id: string;
+  publicKey: string;
+  name: string;
+  userId: string;
+  createdAt: any;
+}>("securityKeys");
+
+export { app, auth, db, analytics, securityKeysCollection };
