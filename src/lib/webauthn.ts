@@ -54,6 +54,7 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
       excludeCredentials
     };
 
+    // Fix the type error by using the correct types for startRegistration
     const registration = await startRegistration(registrationOptions);
     
     const credential: SecurityKeyCredential = {
@@ -98,6 +99,7 @@ export const authenticateWithSecurityKey = async (userId: string) => {
       userVerification: 'required' as const
     };
 
+    // Fix the type error by using the correct types for startAuthentication
     const authentication = await startAuthentication(authOptions);
     
     const credentialIdBase64 = arrayBufferToBase64URL(authentication.rawId);
