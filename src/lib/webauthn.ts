@@ -1,4 +1,3 @@
-
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
@@ -32,14 +31,14 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
     
     // Properly define transports with correct type
     const excludeCredentials = existingCredentials.map(cred => ({
-      id: cred.id, // Use the base64URL string for SimpleWebAuthn
+      id: base64URLToArrayBuffer(cred.id), // Convert base64URL string to ArrayBuffer
       type: 'public-key' as const,
-      transports: ['usb', 'ble', 'nfc', 'internal'] as ('usb' | 'ble' | 'nfc' | 'internal')[]
+      transports: ['usb', 'ble', 'nfc', 'internal'] as AuthenticatorTransport[]
     }));
 
     // Start registration process
     const registrationOptions = {
-      challenge, // Already in base64URL format
+      challenge: base64URLToArrayBuffer(challenge), // Convert directly to ArrayBuffer
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
@@ -62,11 +61,6 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
       attestation: 'none' as const,
       excludeCredentials
     };
-
-    // Convert the challenge string to ArrayBuffer for startRegistration
-    // This fixes the error on line 71
-    const challengeBuffer = base64URLToArrayBuffer(challenge);
-    registrationOptions.challenge = challengeBuffer;
 
     // Start the registration process
     const registration = await startRegistration(registrationOptions);
@@ -108,24 +102,19 @@ export const authenticateWithSecurityKey = async (userId: string) => {
 
     // Properly define transports with correct type
     const allowCredentials = existingCredentials.map(cred => ({
-      id: cred.id, // Use the base64URL string for SimpleWebAuthn
+      id: base64URLToArrayBuffer(cred.id), // Convert base64URL string to ArrayBuffer
       type: 'public-key' as const,
-      transports: ['usb', 'ble', 'nfc', 'internal'] as ('usb' | 'ble' | 'nfc' | 'internal')[]
+      transports: ['usb', 'ble', 'nfc', 'internal'] as AuthenticatorTransport[]
     }));
 
     // Start authentication process
     const authOptions = {
-      challenge,
+      challenge: base64URLToArrayBuffer(challenge), // Convert directly to ArrayBuffer
       rpId: window.location.hostname,
       allowCredentials,
       timeout: 60000,
       userVerification: 'required' as const
     };
-
-    // Convert the challenge string to ArrayBuffer for startAuthentication
-    // This fixes the error on line 124
-    const challengeBuffer = base64URLToArrayBuffer(challenge);
-    authOptions.challenge = challengeBuffer;
 
     // Start the authentication process
     const authentication = await startAuthentication(authOptions);
@@ -211,3 +200,6 @@ function base64URLToArrayBuffer(base64URLString: string): ArrayBuffer {
   
   return array.buffer;
 }
+
+// Define AuthenticatorTransport type if not already defined
+type AuthenticatorTransport = 'usb' | 'ble' | 'nfc' | 'internal';
