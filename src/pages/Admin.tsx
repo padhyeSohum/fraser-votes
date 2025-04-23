@@ -54,6 +54,9 @@ const Admin = () => {
   const [resetPassword, setResetPassword] = useState("");
   const [isKeyVerificationOpen, setIsKeyVerificationOpen] = useState(false);
   const [resultsPassword, setResultsPassword] = useState("");
+  const [securityPassword, setSecurityPassword] = useState("");
+  const [isSecurityPasswordDialogOpen, setIsSecurityPasswordDialogOpen] = useState(false);
+  const [isSecurityTabVerified, setIsSecurityTabVerified] = useState(false);
   
   const [newPosition, setNewPosition] = useState<Omit<Position, "id">>({
     title: "",
@@ -234,6 +237,34 @@ const Admin = () => {
     setIsResetDialogOpen(false);
   };
 
+  const handleSecurityTabClick = (value: string) => {
+    if (value === "security" && !isSecurityTabVerified) {
+      setIsSecurityPasswordDialogOpen(true);
+      return;
+    }
+    setCurrentTab(value);
+  };
+
+  const handleSecurityPasswordSubmit = () => {
+    if (securityPassword === "akshatmygoat") {
+      setIsSecurityTabVerified(true);
+      setIsSecurityPasswordDialogOpen(false);
+      setCurrentTab("security");
+      setSecurityPassword("");
+      toast({
+        title: "Success",
+        description: "Security access granted",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Incorrect password",
+        variant: "destructive",
+      });
+      setSecurityPassword("");
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -328,7 +359,7 @@ const Admin = () => {
         <Tabs 
           defaultValue="candidates" 
           value={currentTab} 
-          onValueChange={setCurrentTab}
+          onValueChange={handleSecurityTabClick}
           className="space-y-6"
         >
           <TabsList className="inline-flex h-12 items-center text-muted-foreground bg-white rounded-md p-1 text-sm font-medium shadow-sm">
