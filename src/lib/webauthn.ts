@@ -1,3 +1,4 @@
+
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -34,11 +35,11 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
 export const registerPasskey = async (userId: string, deviceName?: string) => {
   try {
     // Generate random challenge as a base64 string
-    const challenge = generateChallenge();
-    sessionStorage.setItem('webauthn_challenge', challenge);
+    const challengeString = generateChallenge();
+    sessionStorage.setItem('webauthn_challenge', challengeString);
     
     const registrationOptions = {
-      challenge, // Use string for PublicKeyCredentialCreationOptionsJSON
+      challenge: challengeString, // Use the string for SimpleWebAuthn's PublicKeyCredentialCreationOptionsJSON
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
@@ -65,7 +66,7 @@ export const registerPasskey = async (userId: string, deviceName?: string) => {
     const registration = await startRegistration(registrationOptions);
     
     const credential: PasskeyCredential = {
-      id: arrayBufferToBase64(registration.rawId),
+      id: registration.id, // Use the id directly from the registration response
       publicKey: btoa(JSON.stringify(registration)),
       userHandle: userId,
       createdAt: new Date(),
@@ -86,20 +87,22 @@ export const registerPasskey = async (userId: string, deviceName?: string) => {
 export const authenticateWithPasskey = async (userId: string) => {
   try {
     // Generate random challenge as a base64 string
-    const challenge = generateChallenge();
-    sessionStorage.setItem('webauthn_challenge', challenge);
+    const challengeString = generateChallenge();
+    sessionStorage.setItem('webauthn_challenge', challengeString);
 
     const authOptions = {
-      challenge, // Use string for PublicKeyCredentialRequestOptionsJSON
+      challenge: challengeString, // Use the string for SimpleWebAuthn's PublicKeyCredentialRequestOptionsJSON
       rpId: window.location.hostname,
       timeout: 60000,
       userVerification: 'required' as const
     };
 
     const authentication = await startAuthentication(authOptions);
-    const credentialIdBase64 = arrayBufferToBase64(authentication.rawId);
     
-    const q = query(collection(db, "passkeys"), where("id", "==", credentialIdBase64));
+    // Use the id directly from the authentication response
+    const credentialId = authentication.id;
+    
+    const q = query(collection(db, "passkeys"), where("id", "==", credentialId));
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
