@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,7 +51,7 @@ const Login = () => {
     setIsLoading(true);
     setError("");
     try {
-      // First, authenticate with the security key
+      // First, verify the security key without needing a specific user ID
       const result = await authenticateWithPasskey();
       
       if (!result.success) {
@@ -61,22 +60,12 @@ const Login = () => {
       
       console.log("Security key verified:", result);
       
-      // Check if the key is a superadmin key
-      if (result.role !== "superadmin" && result.role !== "admin") {
-        throw new Error("This security key does not have sufficient permissions");
-      }
-      
-      // Sign in with the authenticated passkey
-      const signInSuccess = await signInWithPasskey(result.role);
+      // Use the auth context to sign in with passkey
+      const signInSuccess = await signInWithPasskey();
       
       if (!signInSuccess) {
         throw new Error("Failed to authenticate with security key");
       }
-      
-      toast({
-        title: "Authentication Successful",
-        description: `Signed in with ${result.deviceName || 'security key'} as ${result.role}`,
-      });
       
       // Redirect to home page after successful login
       navigate("/");

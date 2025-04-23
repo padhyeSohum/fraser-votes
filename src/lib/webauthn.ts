@@ -6,13 +6,13 @@ import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase
 export interface PasskeyCredential {
   id: string;
   publicKey: string;
-  userHandle?: string; 
+  userHandle?: string; // Made optional
   createdAt: any;
-  userId?: string;
+  userId?: string; // Made optional
   deviceName?: string;
   registeredBy?: string;
   purpose?: 'election' | 'general';
-  role: 'superadmin' | 'admin' | 'staff'; 
+  role?: 'superadmin' | 'admin' | 'staff'; // Added role for authorization level
 }
 
 // Helper function to convert base64 strings to ArrayBuffer
@@ -35,12 +35,7 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   return btoa(binary);
 };
 
-export const registerPasskey = async (
-  deviceName?: string, 
-  superadminId?: string, 
-  role: 'superadmin' | 'admin' | 'staff' = 'admin', 
-  purpose: 'election' | 'general' = 'general'
-) => {
+export const registerPasskey = async (deviceName?: string, superadminId?: string, role: 'superadmin' | 'admin' | 'staff' = 'admin', purpose: 'election' | 'general' = 'general') => {
   try {
     if (!superadminId) {
       throw new Error('Only superadmins can register passkeys');
@@ -114,9 +109,6 @@ export const authenticateWithPasskey = async (purpose?: 'election' | 'general') 
     const authentication = await startAuthentication(authOptions);
     const credentialId = authentication.id;
     
-    console.log("Authentication response:", authentication);
-    console.log("Credential ID:", credentialId);
-    
     // Create a query to find the credential by ID only
     let q = query(
       collection(db, "passkeys"), 
@@ -142,14 +134,14 @@ export const authenticateWithPasskey = async (purpose?: 'election' | 'general') 
     // Get the credential data
     const passkeyData = querySnapshot.docs[0].data() as PasskeyCredential;
     
-    console.log("Found valid security key:", passkeyData);
+    console.log("Found valid security key:", passkeyData.deviceName);
     
     // Return the successful authentication with credential details
     return { 
       success: true, 
       verified: true, 
       credentialId: credentialId,
-      role: passkeyData.role, 
+      role: passkeyData.role || 'admin', // Default to admin if not specified
       purpose: passkeyData.purpose || 'general',
       deviceName: passkeyData.deviceName
     };
