@@ -6,12 +6,13 @@ import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase
 export interface PasskeyCredential {
   id: string;
   publicKey: string;
-  userHandle: string;
+  userHandle?: string; // Made optional
   createdAt: any;
-  userId: string;
+  userId?: string; // Made optional
   deviceName?: string;
   registeredBy?: string;
   purpose?: 'election' | 'general';
+  role?: 'superadmin' | 'admin' | 'staff'; // Added role for authorization level
 }
 
 // Helper function to convert base64 strings to ArrayBuffer
@@ -28,13 +29,13 @@ const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
   let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
+  for (let i = 0; bytes.byteLength > i; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
 };
 
-export const registerPasskey = async (userId: string, deviceName?: string, superadminId?: string) => {
+export const registerPasskey = async (deviceName?: string, superadminId?: string, role: string = 'admin', purpose: 'election' | 'general' = 'general') => {
   try {
     if (!superadminId) {
       throw new Error('Only superadmins can register passkeys');
@@ -44,6 +45,9 @@ export const registerPasskey = async (userId: string, deviceName?: string, super
     const challengeString = generateChallenge();
     sessionStorage.setItem('webauthn_challenge', challengeString);
     
+    // Use a generic ID for all security keys
+    const genericId = 'security-key-user';
+    
     const registrationOptions = {
       challenge: challengeString,
       rp: {
@@ -51,9 +55,9 @@ export const registerPasskey = async (userId: string, deviceName?: string, super
         id: window.location.hostname
       },
       user: {
-        id: userId,
-        name: userId,
-        displayName: deviceName || 'FraserVotes Passkey'
+        id: genericId,
+        name: deviceName || 'FraserVotes Security Key',
+        displayName: deviceName || 'Security Key'
       },
       pubKeyCredParams: [
         { type: 'public-key' as const, alg: -7 },   // ES256
@@ -69,18 +73,14 @@ export const registerPasskey = async (userId: string, deviceName?: string, super
 
     const registration = await startRegistration(registrationOptions);
     
-    // Extract purpose from device name or use provided purpose
-    const purpose = deviceName?.toLowerCase().includes('election') ? 'election' : 'general';
-    
     const credential: PasskeyCredential = {
       id: registration.id,
       publicKey: btoa(JSON.stringify(registration)),
-      userHandle: userId,
       createdAt: new Date(),
-      userId,
       deviceName,
       registeredBy: superadminId,
-      purpose
+      purpose,
+      role // Add the role to the credential
     };
 
     const keyRef = doc(collection(db, "passkeys"));
@@ -93,7 +93,7 @@ export const registerPasskey = async (userId: string, deviceName?: string, super
   }
 };
 
-export const authenticateWithPasskey = async (userId: string, purpose?: 'election' | 'general') => {
+export const authenticateWithPasskey = async (purpose?: 'election' | 'general') => {
   try {
     console.log(`Authenticating with purpose: ${purpose || 'general'}`);
     const challengeString = generateChallenge();
@@ -109,7 +109,7 @@ export const authenticateWithPasskey = async (userId: string, purpose?: 'electio
     const authentication = await startAuthentication(authOptions);
     const credentialId = authentication.id;
     
-    // Create a query to find the credential by ID
+    // Create a query to find the credential by ID only
     let q = query(
       collection(db, "passkeys"), 
       where("id", "==", credentialId)
@@ -131,18 +131,19 @@ export const authenticateWithPasskey = async (userId: string, purpose?: 'electio
       throw new Error(`Unknown or invalid passkey for ${purpose || 'general'} purpose`);
     }
     
-    // Get the user ID associated with this credential
+    // Get the credential data
     const passkeyData = querySnapshot.docs[0].data() as PasskeyCredential;
-    const passkeyUserId = passkeyData.userId;
     
-    console.log("Found passkey for user:", passkeyUserId);
+    console.log("Found valid security key:", passkeyData.deviceName);
     
-    // Return the successful authentication with credential ID and user ID
+    // Return the successful authentication with credential details
     return { 
       success: true, 
       verified: true, 
       credentialId: credentialId,
-      userId: passkeyUserId
+      role: passkeyData.role || 'admin', // Default to admin if not specified
+      purpose: passkeyData.purpose || 'general',
+      deviceName: passkeyData.deviceName
     };
   } catch (error) {
     console.error('Error authenticating with passkey:', error);
@@ -150,14 +151,18 @@ export const authenticateWithPasskey = async (userId: string, purpose?: 'electio
   }
 };
 
-export const getPasskeys = async (userId: string): Promise<PasskeyCredential[]> => {
+export const getPasskeys = async (): Promise<PasskeyCredential[]> => {
   try {
-    const q = query(collection(db, "passkeys"), where("userId", "==", userId));
+    // Get all passkeys without filtering by userId
+    const q = query(collection(db, "passkeys"));
     const querySnapshot = await getDocs(q);
     
     const credentials: PasskeyCredential[] = [];
     querySnapshot.forEach((doc) => {
-      credentials.push(doc.data() as PasskeyCredential);
+      // Don't include deleted passkeys
+      if (!doc.data().deleted) {
+        credentials.push(doc.data() as PasskeyCredential);
+      }
     });
     
     return credentials;

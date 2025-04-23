@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -19,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const SecurityKeyManagement: React.FC = () => {
   const { currentUser, isSuperAdmin } = useAuth();
@@ -29,16 +31,14 @@ const SecurityKeyManagement: React.FC = () => {
   const [deviceName, setDeviceName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [keyPurpose, setKeyPurpose] = useState<'general' | 'election'>('general');
+  const [keyRole, setKeyRole] = useState<'admin' | 'superadmin'>('admin');
 
   useEffect(() => {
-    if (currentUser) {
-      fetchPasskeys();
-    }
-  }, [currentUser]);
+    fetchPasskeys();
+  }, []);
 
   const fetchPasskeys = async () => {
-    if (!currentUser) return;
-    const keys = await getPasskeys(currentUser.uid);
+    const keys = await getPasskeys();
     setPasskeys(keys);
   };
 
@@ -55,9 +55,10 @@ const SecurityKeyManagement: React.FC = () => {
     setIsRegistering(true);
     try {
       const result = await registerPasskey(
-        currentUser.uid, 
         `${deviceName.trim()} (${keyPurpose})`,
-        currentUser.uid // Pass superadmin ID
+        currentUser.uid, // Pass superadmin ID
+        keyRole, // Pass the selected role
+        keyPurpose // Pass the selected purpose
       );
       
       if (result.success) {
@@ -169,6 +170,20 @@ const SecurityKeyManagement: React.FC = () => {
                   <option value="election">Election Results Access</option>
                 </select>
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="key-role" className="col-span-4">
+                  Key Authorization Level
+                </Label>
+                <select
+                  id="key-role"
+                  value={keyRole}
+                  onChange={(e) => setKeyRole(e.target.value as 'admin' | 'superadmin')}
+                  className="col-span-4 w-full p-2 border rounded-md"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="superadmin">Superadmin</option>
+                </select>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddKeyDialogOpen(false)} disabled={isRegistering}>
@@ -188,7 +203,7 @@ const SecurityKeyManagement: React.FC = () => {
             <Key className="h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium">No Security Keys Registered</h3>
             <p className="text-sm text-muted-foreground max-w-md mt-2">
-              You haven't registered any security keys yet. Security keys provide a secure way to access sensitive information across all your devices.
+              No security keys have been registered yet. Security keys provide standalone access to the system without requiring a specific user account.
             </p>
             <Button onClick={() => setIsAddKeyDialogOpen(true)} className="mt-4">
               <Plus className="h-4 w-4 mr-2" />
@@ -201,7 +216,7 @@ const SecurityKeyManagement: React.FC = () => {
           <CardHeader>
             <CardTitle>Registered Security Keys</CardTitle>
             <CardDescription>
-              Your registered security keys that can be used across all your devices
+              Security keys that can be used for system authentication
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -215,6 +230,8 @@ const SecurityKeyManagement: React.FC = () => {
                     <div>
                       <div className="font-medium">{key.deviceName || 'Unnamed Device'}</div>
                       <div className="text-sm text-muted-foreground">
+                        {key.purpose === 'election' ? 'Election Access' : 'General Access'} • 
+                        {key.role === 'superadmin' ? ' Superadmin' : ' Admin'} •
                         Registered on {new Date(key.createdAt?.seconds * 1000).toLocaleDateString()}
                       </div>
                     </div>

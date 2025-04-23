@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,21 +51,17 @@ const Login = () => {
     setIsLoading(true);
     setError("");
     try {
-      // First, verify the security key - no need for a specific user ID when authenticating
-      const result = await authenticateWithPasskey("");
+      // First, verify the security key without needing a specific user ID
+      const result = await authenticateWithPasskey();
       
       if (!result.success) {
         throw new Error(result.error || "Security key verification failed");
       }
       
-      if (!result.userId) {
-        throw new Error("No user associated with this security key");
-      }
-      
-      console.log("Security key verified, user ID:", result.userId);
+      console.log("Security key verified:", result);
       
       // Use the auth context to sign in with passkey
-      const signInSuccess = await signInWithPasskey(result.userId);
+      const signInSuccess = await signInWithPasskey();
       
       if (!signInSuccess) {
         throw new Error("Failed to authenticate with security key");

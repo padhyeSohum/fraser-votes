@@ -20,26 +20,16 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
   onSuccess,
   onCancel
 }) => {
-  const { currentUser } = useAuth();
   const { toast } = useToast();
   const [verificationStep, setVerificationStep] = useState<'initial' | 'verifying' | 'success' | 'error'>('initial');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleVerify = async () => {
-    if (!currentUser) {
-      toast({
-        title: "Authentication Error",
-        description: "You need to be logged in to verify a security key",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setVerificationStep('verifying');
     
     try {
       console.log("Verifying with election purpose key");
-      const result = await authenticateWithPasskey(currentUser.uid, 'election');
+      const result = await authenticateWithPasskey('election');
       
       if (result.success && result.verified) {
         console.log("Security key verification successful");

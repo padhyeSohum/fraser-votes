@@ -35,7 +35,7 @@ interface AuthContextType {
   userData: UserData | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithPasskey: (userId: string) => Promise<boolean>;
+  signInWithPasskey: () => Promise<boolean>;
   logout: () => Promise<void>;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
@@ -271,33 +271,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithPasskey = async (userId: string): Promise<boolean> => {
+  const signInWithPasskey = async (): Promise<boolean> => {
     try {
-      console.log("Signing in with passkey for user ID:", userId);
-      
-      const q = query(collection(db, "users"), where("userId", "==", userId));
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        console.error("No user found with the provided userId");
-        toast({
-          title: "Authentication Failed",
-          description: "No user found with this security key",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      const userData = querySnapshot.docs[0].data() as UserData;
+      console.log("Signing in with security key");
       
       await signInAnonymously(auth);
       
-      console.log("Signed in anonymously, setting user data:", userData);
-      
-      setUserData({
-        ...userData,
+      const securityKeyUserData: UserData = {
+        email: "security-key@frasersecondary.org",
+        role: "admin",
+        displayName: "Security Key User",
         authorized: true
-      });
+      };
+      
+      setUserData(securityKeyUserData);
       
       toast({
         title: "Success",
@@ -347,11 +334,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        await fetchUserData(user);
+        if (user.isAnonymous) {
+          setLoading(false);
+        } else {
+          await fetchUserData(user);
+          setLoading(false);
+        }
       } else {
         setUserData(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
