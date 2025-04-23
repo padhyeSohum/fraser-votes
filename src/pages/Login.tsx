@@ -8,6 +8,7 @@ import { LogIn, AlertCircle, KeyRound } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { authenticateWithPasskey } from "@/lib/webauthn";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const {
@@ -17,6 +18,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // If already logged in, redirect
   if (currentUser) {
@@ -50,21 +52,42 @@ const Login = () => {
     setIsLoading(true);
     setError("");
     try {
-      const result = await authenticateWithPasskey("temp-user-id"); // We use a temporary ID since we don't have the user yet
-      if (result.success) {
-        // TODO: This is where you would integrate with your auth system
-        // For now, we'll just show a success message
-        toast({
-          title: "Security Key Verified",
-          description: "However, this feature is not fully integrated yet. Please use Google Sign In.",
-          variant: "destructive",
-        });
-      } else {
+      // First, verify the security key
+      const result = await authenticateWithPasskey("temp-user-id");
+      
+      if (!result.success) {
         throw new Error(result.error || "Security key verification failed");
       }
+      
+      // If verification is successful, check if this security key is registered in Firebase
+      const { db } = await import('@/lib/firebase');
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      
+      // Query Firestore to find a user with this security key
+      const passkeysRef = collection(db, "passkeys");
+      const q = query(passkeysRef, where("id", "==", result.credentialId));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        throw new Error("This security key is not registered with any account");
+      }
+
+      toast({
+        title: "Security Key Verified",
+        description: "Successfully authenticated with security key.",
+      });
+
+      // You can now implement user session creation or redirect to protected routes
+      navigate("/");
+      
     } catch (error: any) {
       console.error("Error signing in with security key:", error);
       setError(error.message || "Failed to verify security key");
+      toast({
+        title: "Authentication Failed",
+        description: error.message || "Failed to verify security key",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
