@@ -8,17 +8,25 @@ import { Label } from "@/components/ui/label";
 import { PinAccess } from "@/types";
 import { Plus, Key, ToggleLeft, ToggleRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import SecurityKeyVerification from "@/components/admin/SecurityKeyVerification";
 
 const PinManagement = () => {
   const { settings, updateSettings } = useElection();
   const { toast } = useToast();
+  const [isKeyVerificationOpen, setIsKeyVerificationOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    type: 'add' | 'remove' | 'toggle';
+    pinId?: string;
+    pinData?: Omit<PinAccess, "id" | "createdAt">;
+  } | null>(null);
+  
   const [newPin, setNewPin] = useState<Omit<PinAccess, "id" | "createdAt">>({
     name: "",
     pin: "",
     isActive: true
   });
 
-  const handleAddPin = () => {
+  const handleInitiateAddPin = () => {
     if (!newPin.name || !newPin.pin) {
       toast({
         title: "Error",
@@ -28,62 +36,86 @@ const PinManagement = () => {
       return;
     }
 
+    setPendingAction({
+      type: 'add',
+      pinData: { ...newPin }
+    });
+    setIsKeyVerificationOpen(true);
+  };
+
+  const handleInitiateRemovePin = (pinId: string) => {
+    setPendingAction({
+      type: 'remove',
+      pinId
+    });
+    setIsKeyVerificationOpen(true);
+  };
+
+  const handleInitiateTogglePinStatus = (pinId: string) => {
+    setPendingAction({
+      type: 'toggle',
+      pinId
+    });
+    setIsKeyVerificationOpen(true);
+  };
+
+  const handleKeyVerificationSuccess = async () => {
+    if (!pendingAction) return;
+
     const updatedPins = [...(settings.pins || [])];
-    const id = crypto.randomUUID();
-    updatedPins.push({
-      id,
-      ...newPin,
-      createdAt: new Date()
-    });
+
+    if (pendingAction.type === 'add' && pendingAction.pinData) {
+      updatedPins.push({
+        id: crypto.randomUUID(),
+        ...pendingAction.pinData,
+        createdAt: new Date()
+      });
+      
+      setNewPin({
+        name: "",
+        pin: "",
+        isActive: true
+      });
+      
+      toast({
+        title: "Success",
+        description: "PIN added successfully"
+      });
+    } else if (pendingAction.type === 'remove' && pendingAction.pinId) {
+      const filteredPins = updatedPins.filter(pin => pin.id !== pendingAction.pinId);
+      updatedPins.splice(0, updatedPins.length, ...filteredPins);
+      
+      toast({
+        title: "Success",
+        description: "PIN removed successfully"
+      });
+    } else if (pendingAction.type === 'toggle' && pendingAction.pinId) {
+      const pinIndex = updatedPins.findIndex(pin => pin.id === pendingAction.pinId);
+      if (pinIndex !== -1) {
+        updatedPins[pinIndex] = {
+          ...updatedPins[pinIndex],
+          isActive: !updatedPins[pinIndex].isActive
+        };
+      }
+      
+      toast({
+        title: "Success",
+        description: "PIN status updated"
+      });
+    }
 
     updateSettings({
       ...settings,
       pins: updatedPins
     });
 
-    setNewPin({
-      name: "",
-      pin: "",
-      isActive: true
-    });
-
-    toast({
-      title: "Success",
-      description: "PIN added successfully"
-    });
+    setPendingAction(null);
+    setIsKeyVerificationOpen(false);
   };
 
-  const handleRemovePin = (pinId: string) => {
-    if (!settings.pins) return;
-
-    const updatedPins = settings.pins.filter(pin => pin.id !== pinId);
-    updateSettings({
-      ...settings,
-      pins: updatedPins
-    });
-
-    toast({
-      title: "Success",
-      description: "PIN removed successfully"
-    });
-  };
-
-  const handleTogglePinStatus = (pinId: string) => {
-    if (!settings.pins) return;
-
-    const updatedPins = settings.pins.map(pin =>
-      pin.id === pinId ? { ...pin, isActive: !pin.isActive } : pin
-    );
-
-    updateSettings({
-      ...settings,
-      pins: updatedPins
-    });
-
-    toast({
-      title: "Success",
-      description: "PIN status updated"
-    });
+  const handleKeyVerificationCancel = () => {
+    setPendingAction(null);
+    setIsKeyVerificationOpen(false);
   };
 
   return (
@@ -116,7 +148,7 @@ const PinManagement = () => {
               />
             </div>
             <div className="flex items-end">
-              <Button onClick={handleAddPin} className="w-full">
+              <Button onClick={handleInitiateAddPin} className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Add PIN
               </Button>
@@ -137,7 +169,7 @@ const PinManagement = () => {
                   <Button
                     variant={pin.isActive ? "outline" : "destructive"}
                     size="sm"
-                    onClick={() => handleTogglePinStatus(pin.id)}
+                    onClick={() => handleInitiateTogglePinStatus(pin.id)}
                   >
                     {pin.isActive ? 
                       <ToggleRight className="h-4 w-4 mr-2" /> : 
@@ -148,7 +180,7 @@ const PinManagement = () => {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => handleRemovePin(pin.id)}
+                    onClick={() => handleInitiateRemovePin(pin.id)}
                   >
                     Remove
                   </Button>
@@ -164,6 +196,13 @@ const PinManagement = () => {
           </div>
         </div>
       </CardContent>
+
+      <SecurityKeyVerification
+        open={isKeyVerificationOpen}
+        onOpenChange={setIsKeyVerificationOpen}
+        onSuccess={handleKeyVerificationSuccess}
+        onCancel={handleKeyVerificationCancel}
+      />
     </Card>
   );
 };

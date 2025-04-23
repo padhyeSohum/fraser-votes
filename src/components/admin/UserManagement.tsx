@@ -8,71 +8,77 @@ import { Label } from "@/components/ui/label";
 import { Trash, UserPlus, Mail, User as UserIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
+import SecurityKeyVerification from "@/components/admin/SecurityKeyVerification";
 
 const UserManagement = () => {
   const { authorizedUsers, addAuthorizedUser, removeAuthorizedUser, fetchAuthorizedUsers } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isKeyVerificationOpen, setIsKeyVerificationOpen] = useState(false);
+  const [pendingUser, setPendingUser] = useState<any>(null);
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
   
   const [newUser, setNewUser] = useState({
     email: "",
     name: "",
   });
   
-  const handleAddUser = async () => {
-    setIsLoading(true);
-    setError("");
-    
+  const handleInitiateAddUser = () => {
     if (!newUser.email) {
       setError("Email is required");
-      setIsLoading(false);
       return;
     }
     
     if (!newUser.email.endsWith("@pdsb.net")) {
       setError("Only @pdsb.net emails are allowed");
-      setIsLoading(false);
       return;
     }
+
+    setPendingUser({
+      email: newUser.email,
+      name: newUser.name || undefined,
+      role: "staff"
+    });
+    setIsKeyVerificationOpen(true);
+  };
+  
+  const handleInitiateRemoveUser = (userId: string) => {
+    setPendingRemoveId(userId);
+    setIsKeyVerificationOpen(true);
+  };
+  
+  const handleKeyVerificationSuccess = async () => {
+    setIsLoading(true);
+    setError("");
     
     try {
-      await addAuthorizedUser({
-        email: newUser.email,
-        name: newUser.name || undefined,
-        role: "staff" // Default role
-      });
-      
-      // Reset form
-      setNewUser({
-        email: "",
-        name: "",
-      });
+      if (pendingUser) {
+        await addAuthorizedUser(pendingUser);
+        setNewUser({ email: "", name: "" });
+        setPendingUser(null);
+      } else if (pendingRemoveId) {
+        const userToRemove = authorizedUsers.find(u => u.id === pendingRemoveId);
+        if (userToRemove) {
+          await removeAuthorizedUser(pendingRemoveId);
+        }
+        setPendingRemoveId(null);
+      }
     } catch (error: any) {
-      console.error("Error adding user:", error);
-      setError(error.message || "Failed to add user");
+      console.error("Error managing user:", error);
+      setError(error.message || "Failed to manage user");
     } finally {
       setIsLoading(false);
+      setIsKeyVerificationOpen(false);
     }
   };
   
-  const handleRemoveUser = async (userId: string, userName: string) => {
-    try {
-      await removeAuthorizedUser(userId);
-      toast({
-        title: "User Removed",
-        description: `${userName} has been removed from authorized users`
-      });
-    } catch (error: any) {
-      console.error("Error removing user:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove user",
-        variant: "destructive"
-      });
-    }
+  const handleKeyVerificationCancel = () => {
+    setPendingUser(null);
+    setPendingRemoveId(null);
+    setIsKeyVerificationOpen(false);
   };
-  
+
   return (
     <div className="space-y-6">
       <Card>
@@ -118,7 +124,7 @@ const UserManagement = () => {
           </div>
           
           <Button 
-            onClick={handleAddUser} 
+            onClick={handleInitiateAddUser} 
             disabled={isLoading || !newUser.email}
             className="w-full md:w-auto"
           >
@@ -170,7 +176,8 @@ const UserManagement = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleRemoveUser(user.id, user.name || user.email)}
+                    onClick={() => handleInitiateRemoveUser(user.id)}
+                    disabled={isLoading}
                   >
                     <Trash className="h-4 w-4 text-red-500" />
                   </Button>
@@ -180,6 +187,13 @@ const UserManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      <SecurityKeyVerification
+        open={isKeyVerificationOpen}
+        onOpenChange={setIsKeyVerificationOpen}
+        onSuccess={handleKeyVerificationSuccess}
+        onCancel={handleKeyVerificationCancel}
+      />
     </div>
   );
 };
