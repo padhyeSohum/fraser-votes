@@ -1,3 +1,4 @@
+
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
@@ -38,7 +39,7 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
 
     // Start registration process
     const registrationOptions = {
-      challenge: base64URLToArrayBuffer(challenge), // Convert directly to ArrayBuffer
+      challenge, // Keep as string for JSON compatibility
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
@@ -109,7 +110,7 @@ export const authenticateWithSecurityKey = async (userId: string) => {
 
     // Start authentication process
     const authOptions = {
-      challenge: base64URLToArrayBuffer(challenge), // Convert directly to ArrayBuffer
+      challenge, // Keep as string for JSON compatibility
       rpId: window.location.hostname,
       allowCredentials,
       timeout: 60000,
