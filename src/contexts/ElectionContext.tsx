@@ -12,7 +12,8 @@ import {
   onSnapshot,
   Timestamp,
   serverTimestamp,
-  increment
+  increment,
+  limit
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
@@ -56,6 +57,17 @@ interface ElectionContextType {
   
   // Reset election method
   resetElection: (password: string) => Promise<void>;
+  
+  // New refresh methods for manual data loading
+  refreshData: () => Promise<void>;
+  refreshCandidates: () => Promise<void>;
+  refreshPositions: () => Promise<void>;
+  refreshStudents: () => Promise<void>;
+  refreshSettings: () => Promise<void>;
+  
+  // Pagination methods
+  loadMoreStudents: () => Promise<void>;
+  hasMoreStudents: boolean;
 }
 
 const ElectionContext = createContext<ElectionContextType | null>(null);
@@ -86,6 +98,8 @@ const getFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
   }
 };
 
+const CACHE_EXPIRY = 5 * 60 * 1000;
+
 export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -100,57 +114,31 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [error, setError] = useState<string | null>(null);
   const [offlineMode, setOfflineMode] = useState(false);
   const { toast } = useToast();
+  
+  const [studentsLastDoc, setStudentsLastDoc] = useState<any>(null);
+  const [hasMoreStudents, setHasMoreStudents] = useState(false);
+  const [studentsPerPage] = useState(50); // Load 50 students at a time
+  
+  const [lastRefreshTime, setLastRefreshTime] = useState({
+    candidates: Date.now(),
+    positions: Date.now(),
+    students: Date.now(),
+    settings: Date.now()
+  });
 
   useEffect(() => {
-    let unsubscribers: (() => void)[] = [];
-    
-    const setupFirebaseListeners = async () => {
+    const setupInitialData = async () => {
       try {
-        const candidatesQuery = query(collection(db, "candidates"), orderBy("position", "asc"));
-        const candidatesUnsubscribe = onSnapshot(candidatesQuery, (snapshot) => {
-          const candidatesList: Candidate[] = [];
-          snapshot.forEach((doc) => {
-            candidatesList.push({ id: doc.id, ...doc.data() } as Candidate);
-          });
-          setCandidates(candidatesList);
-          saveToLocalStorage('candidates', candidatesList);
-        });
-        unsubscribers.push(candidatesUnsubscribe);
-        
-        const positionsQuery = query(collection(db, "positions"), orderBy("order", "asc"));
-        const positionsUnsubscribe = onSnapshot(positionsQuery, (snapshot) => {
-          const positionsList: Position[] = [];
-          snapshot.forEach((doc) => {
-            positionsList.push({ id: doc.id, ...doc.data() } as Position);
-          });
-          setPositions(positionsList);
-          saveToLocalStorage('positions', positionsList);
-        });
-        unsubscribers.push(positionsUnsubscribe);
-        
-        const studentsQuery = query(collection(db, "students"), orderBy("name", "asc"));
-        const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
-          const studentsList: Student[] = [];
-          snapshot.forEach((doc) => {
-            studentsList.push({ id: doc.id, ...doc.data() } as Student);
-          });
-          setStudents(studentsList);
-          saveToLocalStorage('students', studentsList);
-        });
-        unsubscribers.push(studentsUnsubscribe);
-        
-        const settingsUnsubscribe = onSnapshot(doc(db, "settings", "election"), (doc) => {
-          if (doc.exists()) {
-            const settingsData = doc.data() as ElectionSettings;
-            setSettings(settingsData);
-            saveToLocalStorage('settings', settingsData);
-          }
-        });
-        unsubscribers.push(settingsUnsubscribe);
-        
+        setLoading(true);
+        await Promise.all([
+          fetchCandidates(),
+          fetchPositions(),
+          fetchStudentsBatch(true),
+          fetchSettings()
+        ]);
         setLoading(false);
       } catch (err: any) {
-        console.error("Error setting up Firebase listeners:", err);
+        console.error("Error loading initial data:", err);
         
         if (err.code === "permission-denied") {
           setOfflineMode(true);
@@ -176,12 +164,274 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     };
 
-    setupFirebaseListeners();
-    
-    return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
-    };
+    setupInitialData();
   }, [toast]);
+
+  const fetchCandidates = async () => {
+    try {
+      const candidatesQuery = query(
+        collection(db, "candidates"), 
+        orderBy("position", "asc")
+      );
+      
+      const snapshot = await getDocs(candidatesQuery);
+      const candidatesList: Candidate[] = [];
+      
+      snapshot.forEach((doc) => {
+        candidatesList.push({ id: doc.id, ...doc.data() } as Candidate);
+      });
+      
+      setCandidates(candidatesList);
+      saveToLocalStorage('candidates', candidatesList);
+      setLastRefreshTime(prev => ({ ...prev, candidates: Date.now() }));
+      return candidatesList;
+    } catch (error) {
+      console.error("Error fetching candidates:", error);
+      throw error;
+    }
+  };
+
+  const fetchPositions = async () => {
+    try {
+      const positionsQuery = query(
+        collection(db, "positions"), 
+        orderBy("order", "asc")
+      );
+      
+      const snapshot = await getDocs(positionsQuery);
+      const positionsList: Position[] = [];
+      
+      snapshot.forEach((doc) => {
+        positionsList.push({ id: doc.id, ...doc.data() } as Position);
+      });
+      
+      setPositions(positionsList);
+      saveToLocalStorage('positions', positionsList);
+      setLastRefreshTime(prev => ({ ...prev, positions: Date.now() }));
+      return positionsList;
+    } catch (error) {
+      console.error("Error fetching positions:", error);
+      throw error;
+    }
+  };
+
+  const fetchStudentsBatch = async (reset: boolean = false) => {
+    try {
+      let studentsQuery;
+      
+      if (reset) {
+        studentsQuery = query(
+          collection(db, "students"),
+          orderBy("name", "asc"),
+          limit(studentsPerPage)
+        );
+      } else if (studentsLastDoc) {
+        studentsQuery = query(
+          collection(db, "students"),
+          orderBy("name", "asc"),
+          limit(studentsPerPage),
+          /* @ts-ignore */
+          startAfter(studentsLastDoc)
+        );
+      } else {
+        setHasMoreStudents(false);
+        return [];
+      }
+      
+      const snapshot = await getDocs(studentsQuery);
+      
+      setHasMoreStudents(!snapshot.empty && snapshot.docs.length === studentsPerPage);
+      
+      if (!snapshot.empty) {
+        setStudentsLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+      } else {
+        setStudentsLastDoc(null);
+      }
+      
+      const studentsList: Student[] = [];
+      snapshot.forEach((doc) => {
+        studentsList.push({ id: doc.id, ...doc.data() } as Student);
+      });
+      
+      if (reset) {
+        setStudents(studentsList);
+        saveToLocalStorage('students', studentsList);
+      } else {
+        const updatedStudents = [...students, ...studentsList];
+        setStudents(updatedStudents);
+        saveToLocalStorage('students', updatedStudents);
+      }
+      
+      setLastRefreshTime(prev => ({ ...prev, students: Date.now() }));
+      return studentsList;
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      throw error;
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const settingsDoc = await getDoc(doc(db, "settings", "election"));
+      
+      if (settingsDoc.exists()) {
+        const settingsData = settingsDoc.data() as ElectionSettings;
+        setSettings(settingsData);
+        saveToLocalStorage('settings', settingsData);
+        setLastRefreshTime(prev => ({ ...prev, settings: Date.now() }));
+        return settingsData;
+      }
+      
+      return settings;
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      throw error;
+    }
+  };
+
+  const loadMoreStudents = async () => {
+    if (!hasMoreStudents || offlineMode) return;
+    
+    try {
+      await fetchStudentsBatch(false);
+    } catch (err: any) {
+      console.error("Error loading more students:", err);
+      toast({
+        title: "Error",
+        description: `Failed to load more students: ${err.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const refreshCandidates = async () => {
+    if (offlineMode) {
+      toast({
+        title: "Offline Mode",
+        description: "Cannot refresh data in offline mode",
+      });
+      return;
+    }
+    
+    try {
+      await fetchCandidates();
+      toast({
+        title: "Success",
+        description: "Candidates refreshed successfully",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `Failed to refresh candidates: ${err.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const refreshPositions = async () => {
+    if (offlineMode) {
+      toast({
+        title: "Offline Mode",
+        description: "Cannot refresh data in offline mode",
+      });
+      return;
+    }
+    
+    try {
+      await fetchPositions();
+      toast({
+        title: "Success",
+        description: "Positions refreshed successfully",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `Failed to refresh positions: ${err.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const refreshStudents = async () => {
+    if (offlineMode) {
+      toast({
+        title: "Offline Mode",
+        description: "Cannot refresh data in offline mode",
+      });
+      return;
+    }
+    
+    try {
+      await fetchStudentsBatch(true);
+      toast({
+        title: "Success",
+        description: "Students refreshed successfully",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `Failed to refresh students: ${err.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const refreshSettings = async () => {
+    if (offlineMode) {
+      toast({
+        title: "Offline Mode",
+        description: "Cannot refresh data in offline mode",
+      });
+      return;
+    }
+    
+    try {
+      await fetchSettings();
+      toast({
+        title: "Success",
+        description: "Settings refreshed successfully",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `Failed to refresh settings: ${err.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const refreshData = async () => {
+    if (offlineMode) {
+      toast({
+        title: "Offline Mode",
+        description: "Cannot refresh data in offline mode",
+      });
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchCandidates(),
+        fetchPositions(),
+        fetchStudentsBatch(true),
+        fetchSettings()
+      ]);
+      
+      toast({
+        title: "Success",
+        description: "All data refreshed successfully",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `Failed to refresh data: ${err.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addCandidate = async (candidate: Omit<Candidate, "id" | "votes">) => {
     try {
@@ -208,6 +458,16 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         votes: 0,
         createdAt: serverTimestamp()
       });
+      
+      const newCandidate: Candidate = {
+        ...candidate,
+        id: candidateRef.id,
+        votes: 0,
+        createdAt: new Date()
+      };
+      
+      setCandidates(prev => [...prev, newCandidate]);
+      saveToLocalStorage('candidates', [...candidates, newCandidate]);
       
       toast({
         title: "Success",
@@ -263,6 +523,13 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ...candidate,
         updatedAt: serverTimestamp()
       });
+      
+      setCandidates(prev => 
+        prev.map(c => c.id === id ? { ...c, ...candidate } : c)
+      );
+      saveToLocalStorage('candidates', candidates.map(c => 
+        c.id === id ? { ...c, ...candidate } : c
+      ));
       
       toast({
         title: "Success",
@@ -365,6 +632,15 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ...position,
         createdAt: serverTimestamp()
       });
+      
+      const newPosition: Position = {
+        ...position,
+        id: positionRef.id,
+        createdAt: new Date()
+      };
+      
+      setPositions(prev => [...prev, newPosition]);
+      saveToLocalStorage('positions', [...positions, newPosition]);
       
       toast({
         title: "Success",
@@ -582,6 +858,8 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       const batch = [];
+      const newStudentsWithIds = [];
+      
       for (const student of studentsToAdd) {
         const studentRef = doc(collection(db, "students"));
         const studentData = {
@@ -592,9 +870,18 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
         
         batch.push(setDoc(studentRef, studentData));
+        newStudentsWithIds.push({
+          ...student,
+          id: studentRef.id,
+          checkedIn: false,
+          hasVoted: false,
+        });
       }
       
       await Promise.all(batch);
+      
+      setStudents(prev => [...prev, ...newStudentsWithIds]);
+      saveToLocalStorage('students', [...students, ...newStudentsWithIds]);
       
       toast({
         title: "Success",
@@ -1013,6 +1300,9 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           createdAt: serverTimestamp()
         });
       }
+      
+      setSettings(prev => ({ ...prev, ...newSettings }));
+      saveToLocalStorage('settings', { ...settings, ...newSettings });
       
       toast({
         title: "Success",
@@ -1477,6 +1767,13 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     submitVote,
     getResults,
     resetElection,
+    refreshData,
+    refreshCandidates,
+    refreshPositions,
+    refreshStudents,
+    refreshSettings,
+    loadMoreStudents,
+    hasMoreStudents
   };
 
   return (
