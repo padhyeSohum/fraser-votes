@@ -1,4 +1,3 @@
-
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -60,8 +59,6 @@ export const registerPasskey = async (userId: string, deviceName?: string, super
         { type: 'public-key' as const, alg: -257 }, // RS256
       ],
       authenticatorSelection: {
-        authenticatorAttachment: "platform" as const,
-        requireResidentKey: true,
         residentKey: "required" as const,
         userVerification: "required" as const
       },
