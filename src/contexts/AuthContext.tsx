@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { 
   GoogleAuthProvider, 
@@ -6,7 +5,9 @@ import {
   signOut, 
   onAuthStateChanged, 
   User,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  getAuth,
+  signInAnonymously
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -270,6 +271,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithPasskey = async (userId: string): Promise<boolean> => {
+    try {
+      console.log("Signing in with passkey for user ID:", userId);
+      
+      const q = query(collection(db, "users"), where("userId", "==", userId));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        console.error("No user found with the provided userId");
+        toast({
+          title: "Authentication Failed",
+          description: "No user found with this security key",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      const userData = querySnapshot.docs[0].data() as UserData;
+      
+      await signInAnonymously(auth);
+      
+      console.log("Signed in anonymously, setting user data:", userData);
+      
+      setUserData({
+        ...userData,
+        authorized: true
+      });
+      
+      toast({
+        title: "Success",
+        description: "Signed in with security key",
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error("Error signing in with passkey:", error);
+      
+      toast({
+        title: "Authentication Failed",
+        description: error.message || "Failed to sign in with security key",
+        variant: "destructive",
+      });
+      
+      return false;
+    }
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -320,6 +368,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userData,
     loading,
     signInWithGoogle,
+    signInWithPasskey,
     logout,
     isAdmin,
     isSuperAdmin,

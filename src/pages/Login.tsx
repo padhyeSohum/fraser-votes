@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,8 +52,8 @@ const Login = () => {
     setIsLoading(true);
     setError("");
     try {
-      // First, verify the security key
-      const result = await authenticateWithPasskey("temp-user-id");
+      // First, verify the security key - no need for a specific user ID when authenticating
+      const result = await authenticateWithPasskey("");
       
       if (!result.success) {
         throw new Error(result.error || "Security key verification failed");
@@ -71,7 +72,8 @@ const Login = () => {
         throw new Error("Failed to authenticate with security key");
       }
       
-      // Auth context will handle redirecting after successful login
+      // Redirect to home page after successful login
+      navigate("/");
     } catch (error: any) {
       console.error("Error signing in with security key:", error);
       setError(error.message || "Failed to verify security key");
