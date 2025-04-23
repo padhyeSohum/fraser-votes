@@ -1,3 +1,4 @@
+
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
@@ -31,7 +32,8 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
     const excludeCredentials = existingCredentials.map(cred => ({
       id: cred.id, // Keep as base64URL string for SimpleWebAuthn
       type: 'public-key' as const,
-      transports: ['usb', 'ble', 'nfc', 'internal'] as const,
+      // Use array instead of readonly tuple to satisfy SimpleWebAuthn types
+      transports: ['usb', 'ble', 'nfc', 'internal'] as string[]
     }));
 
     // Start registration process
@@ -101,7 +103,8 @@ export const authenticateWithSecurityKey = async (userId: string) => {
     const allowCredentials = existingCredentials.map(cred => ({
       id: cred.id, // Keep as base64URL string for SimpleWebAuthn
       type: 'public-key' as const,
-      transports: ['usb', 'ble', 'nfc', 'internal'] as const,
+      // Use array instead of readonly tuple to satisfy SimpleWebAuthn types
+      transports: ['usb', 'ble', 'nfc', 'internal'] as string[]
     }));
 
     // Start authentication process
