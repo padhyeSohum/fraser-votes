@@ -1,4 +1,3 @@
-
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
@@ -11,35 +10,26 @@ export interface SecurityKeyCredential {
   userId: string;
 }
 
-// Generate a random challenge string in base64URL format
 export const generateChallenge = (): string => {
   const arr = new Uint8Array(32);
   window.crypto.getRandomValues(arr);
   return arrayBufferToBase64URL(arr.buffer);
 };
 
-// Register a new security key
 export const registerSecurityKey = async (userId: string, keyName: string) => {
   try {
-    // Generate a challenge
     const challenge = generateChallenge();
-    
-    // Store challenge temporarily in session storage
     sessionStorage.setItem('webauthn_challenge', challenge);
     
-    // Get existing registered credentials for this user to prevent duplicates
     const existingCredentials = await getSecurityKeyCredentials(userId);
-    
-    // Properly define transports with correct type
     const excludeCredentials = existingCredentials.map(cred => ({
-      id: base64URLToArrayBuffer(cred.id), // Convert base64URL string to ArrayBuffer
+      id: cred.id,
       type: 'public-key' as const,
       transports: ['usb', 'ble', 'nfc', 'internal'] as AuthenticatorTransport[]
     }));
 
-    // Start registration process
     const registrationOptions = {
-      challenge, // Keep as string for JSON compatibility
+      challenge,
       rp: {
         name: 'FraserVotes',
         id: window.location.hostname
@@ -63,10 +53,8 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
       excludeCredentials
     };
 
-    // Start the registration process
     const registration = await startRegistration(registrationOptions);
     
-    // Store the credential in Firestore
     const credential: SecurityKeyCredential = {
       id: arrayBufferToBase64URL(registration.rawId),
       publicKey: btoa(JSON.stringify(registration)),
@@ -75,7 +63,6 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
       userId
     };
 
-    // Save to Firestore
     const keyRef = doc(collection(db, "securityKeys"));
     await setDoc(keyRef, credential);
     
@@ -86,41 +73,32 @@ export const registerSecurityKey = async (userId: string, keyName: string) => {
   }
 };
 
-// Authenticate with a security key
 export const authenticateWithSecurityKey = async (userId: string) => {
   try {
-    // Generate a challenge
     const challenge = generateChallenge();
-    
-    // Store challenge temporarily in session storage
     sessionStorage.setItem('webauthn_challenge', challenge);
     
-    // Get existing credentials for this user
     const existingCredentials = await getSecurityKeyCredentials(userId);
     if (existingCredentials.length === 0) {
       throw new Error('No security keys registered for this user');
     }
 
-    // Properly define transports with correct type
     const allowCredentials = existingCredentials.map(cred => ({
-      id: base64URLToArrayBuffer(cred.id), // Convert base64URL string to ArrayBuffer
+      id: cred.id,
       type: 'public-key' as const,
       transports: ['usb', 'ble', 'nfc', 'internal'] as AuthenticatorTransport[]
     }));
 
-    // Start authentication process
     const authOptions = {
-      challenge, // Keep as string for JSON compatibility
+      challenge,
       rpId: window.location.hostname,
       allowCredentials,
       timeout: 60000,
       userVerification: 'required' as const
     };
 
-    // Start the authentication process
     const authentication = await startAuthentication(authOptions);
     
-    // Verify the credential ID matches one of our stored credentials
     const credentialIdBase64 = arrayBufferToBase64URL(authentication.rawId);
     const matchedCredential = existingCredentials.find(cred => cred.id === credentialIdBase64);
     
@@ -135,7 +113,6 @@ export const authenticateWithSecurityKey = async (userId: string) => {
   }
 };
 
-// Get all security keys registered for a user
 export const getSecurityKeyCredentials = async (userId: string): Promise<SecurityKeyCredential[]> => {
   try {
     const q = query(collection(db, "securityKeys"), where("userId", "==", userId));
@@ -153,7 +130,6 @@ export const getSecurityKeyCredentials = async (userId: string): Promise<Securit
   }
 };
 
-// Remove a security key
 export const removeSecurityKey = async (credentialId: string) => {
   try {
     const q = query(collection(db, "securityKeys"), where("id", "==", credentialId));
@@ -163,7 +139,6 @@ export const removeSecurityKey = async (credentialId: string) => {
       return { success: false, error: 'Security key not found' };
     }
     
-    // Mark as deleted (soft delete)
     const docRef = doc(db, "securityKeys", querySnapshot.docs[0].id);
     await updateDoc(docRef, {
       deleted: true,
@@ -177,17 +152,13 @@ export const removeSecurityKey = async (credentialId: string) => {
   }
 };
 
-// Helper function to convert ArrayBuffer to Base64URL string
 function arrayBufferToBase64URL(buffer: ArrayBuffer): string {
   const binary = String.fromCharCode(...new Uint8Array(buffer));
   const base64 = btoa(binary);
-  // Convert to base64url format by replacing characters that are problematic in URLs
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-// Helper function to convert base64url string to ArrayBuffer
 function base64URLToArrayBuffer(base64URLString: string): ArrayBuffer {
-  // Base64 URL decoding
   const base64 = base64URLString.replace(/-/g, '+').replace(/_/g, '/');
   const padLen = (4 - (base64.length % 4)) % 4;
   const padded = base64 + '='.repeat(padLen);
@@ -202,5 +173,4 @@ function base64URLToArrayBuffer(base64URLString: string): ArrayBuffer {
   return array.buffer;
 }
 
-// Define AuthenticatorTransport type if not already defined
 type AuthenticatorTransport = 'usb' | 'ble' | 'nfc' | 'internal';
