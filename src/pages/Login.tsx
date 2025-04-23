@@ -94,11 +94,17 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-8">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <img src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" alt="FraserVotes Logo" className="mx-auto h-24 w-auto" />
-          <h1 className="mt-6 text-3xl font-extrabold text-gray-900 text-center">FraserVotes</h1>
+        <div className="text-center mb-6 md:mb-8">
+          <img 
+            src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" 
+            alt="FraserVotes Logo" 
+            className="mx-auto h-16 md:h-24 w-auto" 
+          />
+          <h1 className="mt-4 md:mt-6 text-2xl md:text-3xl font-extrabold text-gray-900 text-center">
+            FraserVotes
+          </h1>
         </div>
         
         {error && (
@@ -108,12 +114,12 @@ const Login = () => {
           </Alert>
         )}
         
-        <Card>
+        <Card className="mx-4 md:mx-0">
           <CardHeader>
-            <CardTitle className="text-center">Sign in to your account</CardTitle>
+            <CardTitle className="text-center text-xl md:text-2xl">Sign in to your account</CardTitle>
             <CardDescription className="text-center">
               <div className="flex flex-col gap-2">
-                <p>Please use your @pdsb.net email to access FraserVotes</p>
+                <p className="text-sm md:text-base">Please use your @pdsb.net email to access FraserVotes</p>
               </div>
             </CardDescription>
           </CardHeader>
@@ -121,13 +127,13 @@ const Login = () => {
             <div className="space-y-4">
               <Button 
                 onClick={handleGoogleSignIn} 
-                className="w-full flex items-center justify-center gap-2" 
+                className="w-full flex items-center justify-center gap-2 text-sm md:text-base" 
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                  <div className="animate-spin h-4 w-4 md:h-5 md:w-5 border-2 border-white border-t-transparent rounded-full" />
                 ) : (
-                  <LogIn className="h-5 w-5" />
+                  <LogIn className="h-4 w-4 md:h-5 md:w-5" />
                 )}
                 <span>Sign in with Google</span>
               </Button>
@@ -144,13 +150,13 @@ const Login = () => {
               <Button 
                 onClick={handleSecurityKeySignIn}
                 variant="outline"
-                className="w-full flex items-center justify-center gap-2"
+                className="w-full flex items-center justify-center gap-2 text-sm md:text-base"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
+                  <div className="animate-spin h-4 w-4 md:h-5 md:w-5 border-2 border-primary border-t-transparent rounded-full" />
                 ) : (
-                  <KeyRound className="h-5 w-5" />
+                  <KeyRound className="h-4 w-4 md:h-5 md:w-5" />
                 )}
                 <span>Use Security Key</span>
               </Button>
