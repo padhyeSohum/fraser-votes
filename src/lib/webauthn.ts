@@ -106,7 +106,17 @@ export const authenticateWithPasskey = async (purpose?: 'election' | 'general') 
       userVerification: 'required' as const
     };
 
-    const authentication = await startAuthentication(authOptions);
+    // Create a promise that will reject after 60 seconds
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Authentication timed out. Please try again.")), 60000);
+    });
+
+    // Race between the authentication and the timeout
+    const authentication = await Promise.race([
+      startAuthentication(authOptions),
+      timeoutPromise
+    ]) as any;
+
     const credentialId = authentication.id;
     
     // Create a query to find the credential by ID only
@@ -128,7 +138,7 @@ export const authenticateWithPasskey = async (purpose?: 'election' | 'general') 
     
     if (querySnapshot.empty) {
       console.error(`No matching passkey found with purpose: ${purpose || 'general'}`);
-      throw new Error(`Unknown or invalid passkey for ${purpose || 'general'} purpose`);
+      throw new Error(`Unknown or invalid security key for ${purpose || 'general'} purpose`);
     }
     
     // Get the credential data
@@ -145,9 +155,12 @@ export const authenticateWithPasskey = async (purpose?: 'election' | 'general') 
       purpose: passkeyData.purpose || 'general',
       deviceName: passkeyData.deviceName
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error authenticating with passkey:', error);
-    return { success: false, error };
+    const errorMessage = error.name === 'AbortError' 
+      ? 'Authentication was aborted. Please try again.'
+      : error.message || 'Failed to authenticate with security key';
+    return { success: false, error: errorMessage };
   }
 };
 

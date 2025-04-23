@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Key, Loader2, Check, X } from "lucide-react";
+import { Shield, Key, Loader2, Check, X, RefreshCw } from "lucide-react";
 import { authenticateWithPasskey } from "@/lib/webauthn";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -24,8 +24,17 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
   const [verificationStep, setVerificationStep] = useState<'initial' | 'verifying' | 'success' | 'error'>('initial');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
+  // Reset state when dialog opens
+  useEffect(() => {
+    if (open) {
+      setVerificationStep('initial');
+      setErrorMessage('');
+    }
+  }, [open]);
+
   const handleVerify = async () => {
     setVerificationStep('verifying');
+    setErrorMessage('');
     
     try {
       console.log("Verifying with election purpose key");
@@ -52,9 +61,19 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
       });
     }
   };
+
+  const handleReset = () => {
+    setVerificationStep('initial');
+    setErrorMessage('');
+  };
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        onCancel();
+      }
+      onOpenChange(isOpen);
+    }}>
       <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto p-4 md:p-6">
         <DialogHeader>
           <DialogTitle className="text-lg md:text-xl">Security Key Required</DialogTitle>
@@ -84,6 +103,10 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
               <p className="text-xs md:text-sm text-muted-foreground">
                 Follow the security key prompts on your device
               </p>
+              <Button variant="ghost" onClick={handleReset} className="mt-2">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Cancel and Retry
+              </Button>
             </div>
           )}
           
@@ -104,9 +127,15 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
               <p className="text-xs md:text-sm text-muted-foreground">
                 {errorMessage || 'Unable to verify security key'}
               </p>
-              <Button onClick={handleVerify} className="mt-2 w-full md:w-auto">
-                Try Again
-              </Button>
+              <div className="flex gap-2 justify-center flex-wrap">
+                <Button onClick={handleVerify} className="mt-2 w-full md:w-auto">
+                  Try Again
+                </Button>
+                <Button variant="ghost" onClick={handleReset} className="mt-2 w-full md:w-auto">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reset
+                </Button>
+              </div>
             </div>
           )}
         </div>
