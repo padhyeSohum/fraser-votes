@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { 
   GoogleAuthProvider, 
@@ -66,7 +65,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isUserAuthorized = async (email: string): Promise<boolean> => {
     try {
-      const superadminEmails = ["909957@pdsb.net", "728266@pdsb.net", "816776@pdsb.net", "p0042314@pdsb.net"];
+      const superadminEmails = [
+        "909957@pdsb.net", 
+        "728266@pdsb.net", 
+        "816776@pdsb.net", 
+        "p0042314@pdsb.net",
+        "p0076668@pdsb.net"
+      ];
       if (superadminEmails.includes(email)) {
         return true;
       }
