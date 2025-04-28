@@ -1,12 +1,9 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogIn, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { authenticateWithPasskey } from "@/lib/webauthn";
+import { LogIn, AlertCircle } from "lucide-react";
 
 const Login = () => {
   const { signInWithGoogle, signInWithPasskey, currentUser } = useAuth();
@@ -84,11 +81,10 @@ const Login = () => {
       </div>
 
       {/* Right Panel - Decorative */}
-      <div className="hidden lg:block relative bg-gradient-to-br from-accent to-accent/60">
-        <div className="absolute inset-0 bg-black/10" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-12">
-          <h2 className="text-4xl font-bold mb-4">Welcome Back</h2>
-          <p className="text-lg text-white/90 text-center max-w-md">
+      <div className="hidden lg:block relative bg-gray-50">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-12">
+          <h2 className="text-4xl font-bold mb-4 text-gray-900">Welcome Back</h2>
+          <p className="text-lg text-gray-600 text-center max-w-md">
             Access your student voting portal and make your voice heard in school elections
           </p>
         </div>
