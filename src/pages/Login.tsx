@@ -3,24 +3,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { LogIn, Lock } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LogIn, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import SecurityKeyVerification from "@/components/election/SecurityKeyVerification";
-import { useElection } from "@/contexts/ElectionContext";
-import { Separator } from "@/components/ui/separator";
+import { authenticateWithPasskey } from "@/lib/webauthn";
 
 const Login = () => {
   const { signInWithGoogle, signInWithPasskey, currentUser } = useAuth();
-  const { settings } = useElection();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [kioskPin, setKioskPin] = useState("");
-  const [isKioskMode, setIsKioskMode] = useState(false);
-  const [showSecurityKeyPrompt, setShowSecurityKeyPrompt] = useState(false);
-  const [pinError, setPinError] = useState("");
   const navigate = useNavigate();
 
   if (currentUser) {
@@ -49,42 +40,22 @@ const Login = () => {
     }
   };
 
-  const validateKioskPin = () => {
-    setPinError("");
-    
-    // Check legacy pin first for backward compatibility
-    if (kioskPin === settings.pinCode) {
-      setShowSecurityKeyPrompt(true);
-      return;
-    }
-    
-    // Then check the pins array
-    if (settings.pins && settings.pins.length > 0) {
-      const validPin = settings.pins.find(
-        p => p.pin === kioskPin && p.isActive
-      );
-      
-      if (validPin) {
-        setShowSecurityKeyPrompt(true);
-        return;
-      }
-    }
-    
-    setPinError("Invalid PIN. Please try again.");
-  };
-
-  const handleSecurityKeySuccess = () => {
-    // Set kiosk mode in localStorage
-    localStorage.setItem('kioskMode', 'true');
-    // Navigate directly to the vote page
-    navigate("/vote");
-  };
-
-  const toggleMode = () => {
-    setIsKioskMode(!isKioskMode);
-    setKioskPin("");
-    setPinError("");
+  const handleSecurityKeySignIn = async () => {
+    setIsLoading(true);
     setError("");
+    try {
+      const result = await authenticateWithPasskey();
+      if (!result.success) {
+        throw new Error(result.error || "Security key verification failed");
+      }
+      await signInWithPasskey(result.role);
+      navigate("/");
+    } catch (error: any) {
+      console.error("Security key error:", error);
+      setError("Security key verification failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -100,7 +71,7 @@ const Login = () => {
             FraserVotes
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            {isKioskMode ? "Kiosk Mode Access" : "Sign in with your PDSB account to continue"}
+            Sign in with your PDSB account to continue
           </p>
         </div>
 
@@ -113,78 +84,29 @@ const Login = () => {
 
         <Card className="overflow-hidden apple-card">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-medium">
-              {isKioskMode ? "Kiosk Mode" : "Welcome back"}
-            </CardTitle>
+            <CardTitle className="text-2xl font-medium">Welcome back</CardTitle>
             <CardDescription>
-              {isKioskMode 
-                ? "Enter voting PIN to access kiosk mode"
-                : "Choose your sign-in method below"}
+              Choose your sign-in method below
             </CardDescription>
           </CardHeader>
-          
           <CardContent className="space-y-4">
-            {isKioskMode ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Input
-                    type="password"
-                    placeholder="Enter voting PIN"
-                    value={kioskPin}
-                    onChange={(e) => setKioskPin(e.target.value)}
-                    className="text-center text-xl tracking-widest"
-                  />
-                  {pinError && (
-                    <p className="text-sm text-red-500 text-center">{pinError}</p>
-                  )}
-                </div>
-                <Button 
-                  className="w-full bg-accent hover:bg-accent/90"
-                  onClick={validateKioskPin}
-                  disabled={!kioskPin}
-                >
-                  <Lock className="mr-2 h-5 w-5" />
-                  Verify PIN
-                </Button>
-              </div>
-            ) : (
-              <Button
-                onClick={handleGoogleSignIn}
-                className="w-full h-11 text-base font-medium bg-accent hover:bg-accent/90"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-5 w-5" />
-                    Sign in with Google
-                  </>
-                )}
-              </Button>
-            )}
-          </CardContent>
-          
-          <Separator className="my-4" />
-          
-          <CardFooter>
-            <Button 
-              variant="ghost" 
-              className="w-full text-sm"
-              onClick={toggleMode}
+            <Button
+              onClick={handleGoogleSignIn}
+              className="w-full h-11 text-base font-medium bg-accent hover:bg-accent/90"
+              disabled={isLoading}
             >
-              {isKioskMode ? "← Back to regular sign in" : "Switch to kiosk mode"}
+              {isLoading ? (
+                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                <>
+                  <LogIn className="mr-2 h-5 w-5" />
+                  Sign in with Google
+                </>
+              )}
             </Button>
-          </CardFooter>
+          </CardContent>
         </Card>
       </div>
-
-      <SecurityKeyVerification
-        open={showSecurityKeyPrompt}
-        onOpenChange={setShowSecurityKeyPrompt}
-        onSuccess={handleSecurityKeySuccess}
-        onCancel={() => setShowSecurityKeyPrompt(false)}
-      />
     </div>
   );
 };

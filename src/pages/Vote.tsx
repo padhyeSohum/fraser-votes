@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ import Header from "@/components/Header";
 import { Candidate, Position, Vote as VoteType } from "@/types";
 
 const Vote = () => {
-  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { candidates, positions, settings, submitVote } = useElection();
   const [enteredPin, setEnteredPin] = useState("");
@@ -85,17 +83,7 @@ const Vote = () => {
     }
   };
   
-  useEffect(() => {
-    // Check if we're in kiosk mode
-    const isKioskMode = localStorage.getItem('kioskMode') === 'true';
-    
-    if (isKioskMode && !isPinCorrect) {
-      // If in kiosk mode and pin not verified, redirect to login
-      navigate('/login');
-      return;
-    }
-  }, [isPinCorrect, navigate]);
-  
+  // Clear any selected candidates when pin is first validated
   useEffect(() => {
     if (isPinCorrect) {
       setSelectedCandidates({});
@@ -112,7 +100,7 @@ const Vote = () => {
   if (!isVotingActive) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header hideNav={localStorage.getItem('kioskMode') === 'true'} />
+        <Header />
         
         <main className="container mx-auto py-16 px-4">
           <div className="max-w-lg mx-auto text-center">
@@ -130,11 +118,9 @@ const Vote = () => {
   }
   
   if (hasVoted) {
-    localStorage.removeItem('kioskMode');
-    
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header hideNav={false} />
+        <Header />
         
         <main className="container mx-auto py-16 px-4">
           <div className="max-w-lg mx-auto text-center">
@@ -154,7 +140,7 @@ const Vote = () => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header hideNav={localStorage.getItem('kioskMode') === 'true'} />
+      <Header />
       
       <main className="container mx-auto py-8 px-4">
         <div className="flex items-center justify-between mb-8">
