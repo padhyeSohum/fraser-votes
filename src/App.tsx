@@ -54,10 +54,10 @@ const App = () => (
     <AuthProvider>
       <ElectionProvider>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <div className="flex flex-col min-h-screen">
+          <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
               <div className="flex-grow">
                 <Suspense fallback={<LoadingScreen />}>
                   <Routes>
@@ -92,8 +92,8 @@ const App = () => (
                 </Suspense>
               </div>
               <Footer />
-            </div>
-          </BrowserRouter>
+            </BrowserRouter>
+          </div>
         </TooltipProvider>
       </ElectionProvider>
     </AuthProvider>

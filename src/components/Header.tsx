@@ -3,54 +3,59 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Settings } from "lucide-react";
-import { useEffect, useState } from "react";
 
 const Header = () => {
   const { currentUser, userData, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLogout = async () => {
     await logout();
     navigate("/login");
   };
 
-  // Safely check for admin role
   const isAdmin = userData?.role === "admin" || userData?.role === "superadmin";
-  const isSuperAdmin = userData?.role === "superadmin";
 
   return (
-    <header className="bg-white shadow-sm border-b">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <img
-              src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
-              alt="FraserVotes Logo"
-              className="h-8 w-auto"
-            />
-            <span className="font-bold text-xl">FraserVotes</span>
-          </Link>
-        </div>
-
-        <nav className="hidden md:flex items-center space-x-4">
-          <Link to="/checkin" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
-            Check-In
-          </Link>
-          <Link to="/vote" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
-            Vote
-          </Link>
-          {isAdmin && (
-            <Link to="/admin" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
-              Admin
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
+      <div className="container mx-auto px-4">
+        <div className="flex h-16 items-center justify-between">
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center gap-2">
+              <img
+                src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
+                alt="FraserVotes Logo"
+                className="h-8 w-auto"
+              />
+              <span className="font-semibold text-xl">FraserVotes</span>
             </Link>
-          )}
-        </nav>
+          </div>
 
-        <div className="flex items-center gap-2">
+          <nav className="hidden md:flex items-center gap-6">
+            <Link 
+              to="/checkin" 
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Check-In
+            </Link>
+            <Link 
+              to="/vote" 
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Vote
+            </Link>
+            {isAdmin && (
+              <Link 
+                to="/admin" 
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Admin
+              </Link>
+            )}
+          </nav>
+
           {currentUser && (
-            <>
-              <div className="hidden md:flex items-center mr-2">
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center">
                 <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-200 mr-2">
                   {currentUser.photoURL ? (
                     <img
@@ -59,17 +64,24 @@ const Header = () => {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <User className="h-full w-full p-1 text-gray-500" />
+                    <User className="h-full w-full p-1.5 text-gray-500" />
                   )}
                 </div>
-                <span className="text-sm font-medium">{currentUser.displayName}</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {currentUser.displayName}
+                </span>
               </div>
               
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-gray-600 hover:text-gray-900"
+              >
                 <LogOut className="h-4 w-4 mr-2" />
                 <span className="hidden md:inline">Sign Out</span>
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
