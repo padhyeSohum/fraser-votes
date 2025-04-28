@@ -74,36 +74,43 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
       }
       onOpenChange(isOpen);
     }}>
-      <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto p-4 md:p-6">
+      <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto apple-card">
         <DialogHeader>
-          <DialogTitle className="text-lg md:text-xl">Security Key Required</DialogTitle>
-          <DialogDescription className="text-sm md:text-base">
-            Please verify your identity using an election security key to view results
+          <DialogTitle className="text-xl font-medium tracking-tight">Security Key Required</DialogTitle>
+          <DialogDescription className="text-base text-muted-foreground">
+            Please verify your identity using an election security key
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex flex-col items-center justify-center py-4 md:py-6 space-y-4">
+        <div className="flex flex-col items-center justify-center py-8 space-y-6">
           {verificationStep === 'initial' && (
-            <div className="text-center space-y-3 md:space-y-4">
-              <Key className="h-10 w-10 md:h-12 md:w-12 text-primary mx-auto" />
-              <div className="text-base md:text-lg font-semibold">Connect Your Election Security Key</div>
-              <p className="text-xs md:text-sm text-muted-foreground">
-                Insert your election security key and click the button below to verify
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
+                <Key className="h-8 w-8 text-accent" />
+              </div>
+              <div className="text-lg font-medium">Connect Your Security Key</div>
+              <p className="text-sm text-muted-foreground max-w-[280px] mx-auto">
+                Insert your election security key and tap the button below to verify
               </p>
-              <Button onClick={handleVerify} className="mt-2 w-full md:w-auto">
+              <Button 
+                onClick={handleVerify} 
+                className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90"
+              >
                 Verify Security Key
               </Button>
             </div>
           )}
           
           {verificationStep === 'verifying' && (
-            <div className="text-center space-y-3 md:space-y-4">
-              <Loader2 className="h-10 w-10 md:h-12 md:w-12 text-primary mx-auto animate-spin" />
-              <div className="text-base md:text-lg font-semibold">Verifying...</div>
-              <p className="text-xs md:text-sm text-muted-foreground">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
+                <Loader2 className="h-8 w-8 text-accent animate-spin" />
+              </div>
+              <div className="text-lg font-medium">Verifying...</div>
+              <p className="text-sm text-muted-foreground max-w-[280px] mx-auto">
                 Follow the security key prompts on your device
               </p>
-              <Button variant="ghost" onClick={handleReset} className="mt-2">
+              <Button variant="ghost" onClick={handleReset} size="sm" className="mt-2">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Cancel and Retry
               </Button>
@@ -111,27 +118,38 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
           )}
           
           {verificationStep === 'success' && (
-            <div className="text-center space-y-3 md:space-y-4">
-              <Check className="h-10 w-10 md:h-12 md:w-12 text-green-500 mx-auto" />
-              <div className="text-base md:text-lg font-semibold">Verification Successful</div>
-              <p className="text-xs md:text-sm text-muted-foreground">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto">
+                <Check className="h-8 w-8 text-green-500" />
+              </div>
+              <div className="text-lg font-medium text-green-500">Verification Successful</div>
+              <p className="text-sm text-muted-foreground max-w-[280px] mx-auto">
                 You now have access to the election results
               </p>
             </div>
           )}
           
           {verificationStep === 'error' && (
-            <div className="text-center space-y-3 md:space-y-4">
-              <X className="h-10 w-10 md:h-12 md:w-12 text-destructive mx-auto" />
-              <div className="text-base md:text-lg font-semibold">Verification Failed</div>
-              <p className="text-xs md:text-sm text-muted-foreground">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
+                <X className="h-8 w-8 text-destructive" />
+              </div>
+              <div className="text-lg font-medium text-destructive">Verification Failed</div>
+              <p className="text-sm text-muted-foreground max-w-[280px] mx-auto">
                 {errorMessage || 'Unable to verify security key'}
               </p>
-              <div className="flex gap-2 justify-center flex-wrap">
-                <Button onClick={handleVerify} className="mt-2 w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button 
+                  onClick={handleVerify}
+                  className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90"
+                >
                   Try Again
                 </Button>
-                <Button variant="ghost" onClick={handleReset} className="mt-2 w-full md:w-auto">
+                <Button 
+                  variant="outline" 
+                  onClick={handleReset} 
+                  className="w-full sm:w-auto"
+                >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Reset
                 </Button>
@@ -145,7 +163,7 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
             variant="outline" 
             onClick={onCancel} 
             disabled={verificationStep === 'verifying'}
-            className="w-full md:w-auto"
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
