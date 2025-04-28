@@ -73,9 +73,10 @@ const Login = () => {
     setPinError("Invalid PIN. Please try again.");
   };
 
-  const handleSecurityKeySuccess = async () => {
-    // Navigate to vote page in kiosk mode
+  const handleSecurityKeySuccess = () => {
+    // Set kiosk mode in localStorage
     localStorage.setItem('kioskMode', 'true');
+    // Navigate directly to the vote page
     navigate("/vote");
   };
 
