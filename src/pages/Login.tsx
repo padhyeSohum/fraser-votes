@@ -40,72 +40,58 @@ const Login = () => {
     }
   };
 
-  const handleSecurityKeySignIn = async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const result = await authenticateWithPasskey();
-      if (!result.success) {
-        throw new Error(result.error || "Security key verification failed");
-      }
-      await signInWithPasskey(result.role);
-      navigate("/");
-    } catch (error: any) {
-      console.error("Security key error:", error);
-      setError("Security key verification failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 px-4">
-      <div className="w-full max-w-md space-y-8 animate-fade-in">
-        <div className="text-center">
-          <img
-            src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
-            alt="FraserVotes Logo"
-            className="mx-auto h-20 w-auto"
-          />
-          <h1 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">
-            FraserVotes
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in with your PDSB account to continue
+    <div className="min-h-screen grid lg:grid-cols-2">
+      {/* Left Panel - Login Form */}
+      <div className="flex flex-col items-center justify-center p-8 lg:p-12">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <img
+              src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
+              alt="FraserVotes Logo"
+              className="mx-auto h-16 w-auto"
+            />
+            <h1 className="mt-6 text-4xl font-bold tracking-tight text-gray-900">
+              FraserVotes
+            </h1>
+            <p className="mt-2 text-base text-gray-600">
+              Sign in with your PDSB account to continue
+            </p>
+          </div>
+
+          {error && (
+            <Alert variant="destructive" className="animate-fade-in">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            onClick={handleGoogleSignIn}
+            className="w-full h-12 text-base font-medium bg-accent hover:bg-accent/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+            ) : (
+              <>
+                <LogIn className="mr-2 h-5 w-5" />
+                Sign in with Google
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Right Panel - Decorative */}
+      <div className="hidden lg:block relative bg-gradient-to-br from-accent to-accent/60">
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-12">
+          <h2 className="text-4xl font-bold mb-4">Welcome Back</h2>
+          <p className="text-lg text-white/90 text-center max-w-md">
+            Access your student voting portal and make your voice heard in school elections
           </p>
         </div>
-
-        {error && (
-          <Alert variant="destructive" className="animate-fade-in">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        <Card className="overflow-hidden apple-card">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-medium">Welcome back</CardTitle>
-            <CardDescription>
-              Choose your sign-in method below
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              onClick={handleGoogleSignIn}
-              className="w-full h-11 text-base font-medium bg-accent hover:bg-accent/90"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-              ) : (
-                <>
-                  <LogIn className="mr-2 h-5 w-5" />
-                  Sign in with Google
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
