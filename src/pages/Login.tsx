@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +7,6 @@ import { LogIn, AlertCircle, KeyRound } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { authenticateWithPasskey } from "@/lib/webauthn";
 import { useToast } from "@/hooks/use-toast";
-
 const Login = () => {
   const {
     signInWithGoogle,
@@ -27,7 +25,6 @@ const Login = () => {
     navigate("/");
     return null;
   }
-  
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError("");
@@ -49,7 +46,6 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  
   const handleSecurityKeySignIn = async () => {
     setIsLoading(true);
     setError("");
@@ -81,16 +77,10 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 px-4 py-8 animate-fade-in">
+  return <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 px-4 py-8 animate-fade-in">
       <div className="w-full max-w-md">
         <div className="text-center mb-6 md:mb-8 animate-scale-in">
-          <img 
-            src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" 
-            alt="FraserVotes Logo" 
-            className="mx-auto h-20 md:h-28 w-auto drop-shadow-md" 
-          />
+          <img src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" alt="FraserVotes Logo" className="mx-auto h-20 md:h-28 w-auto drop-shadow-md" />
           <h1 className="mt-4 md:mt-6 text-3xl md:text-4xl font-bold text-gray-900 dark:text-white text-center font-heading">
             FraserVotes
           </h1>
@@ -99,12 +89,10 @@ const Login = () => {
           </p>
         </div>
         
-        {error && (
-          <Alert variant="destructive" className="mb-6 border-destructive/20 text-destructive">
+        {error && <Alert variant="destructive" className="mb-6 border-destructive/20 text-destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+          </Alert>}
         
         <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm dark:bg-gray-800/90">
           <CardHeader className="space-y-1">
@@ -115,28 +103,16 @@ const Login = () => {
           </CardHeader>
           <CardContent className="space-y-4 pt-0">
             <div className="space-y-4">
-              <Button 
-                onClick={handleGoogleSignIn} 
-                className="w-full flex items-center justify-center gap-2 text-base font-medium h-12 button-hover"
-                disabled={isLoading}
-                variant="default"
-              >
-                {isLoading ? 
-                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : 
-                  <LogIn className="h-5 w-5" />
-                }
+              <Button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-2 text-base font-medium h-12 button-hover" disabled={isLoading} variant="default">
+                {isLoading ? <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <LogIn className="h-5 w-5" />}
                 <span>Sign in with Google</span>
               </Button>
             </div>
           </CardContent>
         </Card>
         
-        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          &copy; {new Date().getFullYear()} FraserVotes. All rights reserved.
-        </div>
+        
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Login;
