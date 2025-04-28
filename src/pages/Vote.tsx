@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import Header from "@/components/Header";
 import { Candidate, Position, Vote as VoteType } from "@/types";
 
 const Vote = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { candidates, positions, settings, submitVote } = useElection();
   const [enteredPin, setEnteredPin] = useState("");
@@ -92,7 +94,7 @@ const Vote = () => {
       navigate('/login');
       return;
     }
-  }, [isPinCorrect]);
+  }, [isPinCorrect, navigate]);
   
   useEffect(() => {
     if (isPinCorrect) {
