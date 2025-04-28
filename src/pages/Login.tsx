@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,59 +39,47 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left Panel - Login Form */}
-      <div className="flex flex-col items-center justify-center p-8 lg:p-12">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <img
-              src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
-              alt="FraserVotes Logo"
-              className="mx-auto h-16 w-auto"
-            />
-            <h1 className="mt-6 text-4xl font-bold tracking-tight text-gray-900">
-              FraserVotes
-            </h1>
-            <p className="mt-2 text-base text-gray-600">
-              Sign in with your PDSB account to continue
-            </p>
-          </div>
-
-          {error && (
-            <Alert variant="destructive" className="animate-fade-in">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <Button
-            onClick={handleGoogleSignIn}
-            className="w-full h-12 text-base font-medium bg-accent hover:bg-accent/90 transition-all duration-300 shadow-lg hover:shadow-xl"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-            ) : (
-              <>
-                <LogIn className="mr-2 h-5 w-5" />
-                Sign in with Google
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Right Panel - Decorative */}
-      <div className="hidden lg:block relative bg-gray-50">
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-12">
-          <h2 className="text-4xl font-bold mb-4 text-gray-900">Welcome Back</h2>
-          <p className="text-lg text-gray-600 text-center max-w-md">
-            Access your student voting portal and make your voice heard in school elections
+    <div className="min-h-screen flex items-center justify-center p-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <img
+            src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
+            alt="FraserVotes Logo"
+            className="mx-auto h-16 w-auto"
+          />
+          <h1 className="mt-6 text-4xl font-bold tracking-tight text-gray-900">
+            FraserVotes
+          </h1>
+          <p className="mt-2 text-base text-gray-600">
+            Sign in with your PDSB account to continue
           </p>
         </div>
+
+        {error && (
+          <Alert variant="destructive" className="animate-fade-in">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <Button
+          onClick={handleGoogleSignIn}
+          className="w-full h-12 text-base font-medium bg-accent hover:bg-accent/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+          ) : (
+            <>
+              <LogIn className="mr-2 h-5 w-5" />
+              Sign in with Google
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );
 };
 
 export default Login;
+
