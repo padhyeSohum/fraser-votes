@@ -83,7 +83,17 @@ const Vote = () => {
     }
   };
   
-  // Clear any selected candidates when pin is first validated
+  useEffect(() => {
+    // Check if we're in kiosk mode
+    const isKioskMode = localStorage.getItem('kioskMode') === 'true';
+    
+    if (isKioskMode && !isPinCorrect) {
+      // If in kiosk mode and pin not verified, redirect to login
+      navigate('/login');
+      return;
+    }
+  }, [isPinCorrect]);
+  
   useEffect(() => {
     if (isPinCorrect) {
       setSelectedCandidates({});
@@ -100,7 +110,7 @@ const Vote = () => {
   if (!isVotingActive) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        <Header hideNav={localStorage.getItem('kioskMode') === 'true'} />
         
         <main className="container mx-auto py-16 px-4">
           <div className="max-w-lg mx-auto text-center">
@@ -118,9 +128,11 @@ const Vote = () => {
   }
   
   if (hasVoted) {
+    localStorage.removeItem('kioskMode');
+    
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        <Header hideNav={false} />
         
         <main className="container mx-auto py-16 px-4">
           <div className="max-w-lg mx-auto text-center">
@@ -140,7 +152,7 @@ const Vote = () => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header hideNav={localStorage.getItem('kioskMode') === 'true'} />
       
       <main className="container mx-auto py-8 px-4">
         <div className="flex items-center justify-between mb-8">

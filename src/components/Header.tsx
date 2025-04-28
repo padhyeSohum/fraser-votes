@@ -1,89 +1,45 @@
-
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Settings } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { LogOut } from "lucide-react";
 
-const Header = () => {
-  const { currentUser, userData, logout } = useAuth();
-  const navigate = useNavigate();
+interface HeaderProps {
+  hideNav?: boolean;
+}
+
+const Header = ({ hideNav = false }: HeaderProps) => {
+  const { currentUser, logout } = useAuth();
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
+    try {
+      await logout();
+      // Clear kiosk mode if present
+      localStorage.removeItem('kioskMode');
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
   };
 
-  const isAdmin = userData?.role === "admin" || userData?.role === "superadmin";
+  if (hideNav) {
+    return null;
+  }
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-2">
-              <img
-                src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
-                alt="FraserVotes Logo"
-                className="h-8 w-auto"
-              />
-              <span className="font-semibold text-xl">FraserVotes</span>
-            </Link>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-6">
-            <Link 
-              to="/checkin" 
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Check-In
-            </Link>
-            <Link 
-              to="/vote" 
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Vote
-            </Link>
-            {isAdmin && (
-              <Link 
-                to="/admin" 
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Admin
-              </Link>
-            )}
-          </nav>
-
-          {currentUser && (
-            <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center">
-                <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-200 mr-2">
-                  {currentUser.photoURL ? (
-                    <img
-                      src={currentUser.photoURL}
-                      alt={currentUser.displayName || "User"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-full w-full p-1.5 text-gray-500" />
-                  )}
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {currentUser.displayName}
-                </span>
-              </div>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                <span className="hidden md:inline">Sign Out</span>
-              </Button>
-            </div>
-          )}
+    <header className="bg-white border-b shadow-sm">
+      <div className="container mx-auto py-4 px-4 flex items-center justify-between">
+        <div className="flex items-center">
+          <img
+            src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
+            alt="FraserVotes Logo"
+            className="h-8 w-auto mr-4"
+          />
+          <h1 className="text-lg font-semibold">FraserVotes</h1>
         </div>
+        {currentUser && (
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        )}
       </div>
     </header>
   );
