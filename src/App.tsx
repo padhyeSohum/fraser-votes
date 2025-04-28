@@ -15,17 +15,9 @@ const Login = lazy(() => import("./pages/Login"));
 const Admin = lazy(() => import("./pages/Admin"));
 const CheckIn = lazy(() => import("./pages/CheckIn"));
 const Vote = lazy(() => import("./pages/Vote"));
-const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1
-    }
-  }
-});
+const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ 
   children, 
@@ -73,7 +65,7 @@ const App = () => (
                     
                     <Route path="/" element={
                       <ProtectedRoute>
-                        <Index />
+                        <CheckIn />
                       </ProtectedRoute>
                     } />
                     
@@ -99,6 +91,7 @@ const App = () => (
                   </Routes>
                 </Suspense>
               </div>
+              <Footer />
             </div>
           </BrowserRouter>
         </TooltipProvider>
