@@ -23,6 +23,10 @@ const Vote = () => {
   
   const isVotingActive = settings?.isActive || false;
 
+  // Calculate if all positions have a selected candidate
+  const allPositionsSelected = positions.length > 0 && 
+    positions.every(position => Boolean(selectedCandidates[position.id]));
+
   const handlePinSubmit = () => {
     // Clear any previous errors
     setPinError("");
@@ -285,7 +289,7 @@ const Vote = () => {
                 <Button
                   className="w-full bg-blue-600 hover:bg-blue-700"
                   onClick={handleSubmitVote}
-                  disabled={positions.length !== Object.keys(selectedCandidates).length || loading}
+                  disabled={!allPositionsSelected || loading}
                 >
                   {loading ? (
                     <span className="flex items-center">
