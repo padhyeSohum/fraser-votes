@@ -6,29 +6,70 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, Shield, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import SecurityKeyVerification from "@/components/election/SecurityKeyVerification";
 
 type UserRole = "superadmin" | "admin" | "staff" | "student" | "guest" | "checkin" | "vote";
 
 const UserRoleManagement = () => {
-  const { authorizedUsers, updateUserRole, isSuperAdmin } = useAuth();
+  const { authorizedUsers, updateUserRole, isSuperAdmin, fetchAuthorizedUsers } = useAuth();
   const { toast } = useToast();
   const [roleChangeDialogOpen, setRoleChangeDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ id: string, name: string, email: string, currentRole: UserRole } | null>(null);
   const [newRole, setNewRole] = useState<UserRole>("staff");
+  const [isKeyVerificationOpen, setIsKeyVerificationOpen] = useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState<{userId: string, newRole: UserRole} | null>(null);
 
   const handleRoleChange = async () => {
     if (!selectedUser) return;
     
-    try {
-      await updateUserRole(selectedUser.id, newRole);
-      toast({
-        title: "Success",
-        description: `${selectedUser.name || selectedUser.email}'s role updated to ${newRole}`,
+    // Check if the new role is admin or superadmin and requires verification
+    if ((newRole === "admin" || newRole === "superadmin") && 
+        (selectedUser.currentRole !== "admin" && selectedUser.currentRole !== "superadmin")) {
+      setPendingRoleChange({
+        userId: selectedUser.id,
+        newRole: newRole
       });
       setRoleChangeDialogOpen(false);
+      setIsKeyVerificationOpen(true);
+    } else {
+      // For non-privileged roles, proceed without verification
+      await applyRoleChange(selectedUser.id, newRole);
+    }
+  };
+
+  const applyRoleChange = async (userId: string, role: UserRole) => {
+    try {
+      await updateUserRole(userId, role);
+      
+      // Refresh the users list to update UI
+      await fetchAuthorizedUsers();
+      
+      toast({
+        title: "Success",
+        description: `User role updated to ${role}`,
+      });
+      setRoleChangeDialogOpen(false);
+      setPendingRoleChange(null);
     } catch (error) {
       console.error("Error updating role:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role",
+        variant: "destructive",
+      });
     }
+  };
+
+  const handleKeyVerificationSuccess = async () => {
+    if (pendingRoleChange) {
+      await applyRoleChange(pendingRoleChange.userId, pendingRoleChange.newRole);
+    }
+    setIsKeyVerificationOpen(false);
+  };
+
+  const handleKeyVerificationCancel = () => {
+    setPendingRoleChange(null);
+    setIsKeyVerificationOpen(false);
   };
 
   const openRoleChangeDialog = (userId: string, userName: string, userEmail: string, currentRole: UserRole) => {
@@ -126,6 +167,13 @@ const UserRoleManagement = () => {
                   This will change what pages the user can access.
                 </>
               )}
+              {(newRole === "admin" || newRole === "superadmin") && 
+               (selectedUser?.currentRole !== "admin" && selectedUser?.currentRole !== "superadmin") && (
+                <div className="mt-2 text-amber-600 flex items-center">
+                  <Shield className="h-4 w-4 mr-1" />
+                  Security key verification will be required for admin roles
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           
@@ -155,6 +203,13 @@ const UserRoleManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SecurityKeyVerification
+        open={isKeyVerificationOpen}
+        onOpenChange={setIsKeyVerificationOpen}
+        onSuccess={handleKeyVerificationSuccess}
+        onCancel={handleKeyVerificationCancel}
+      />
     </div>
   );
 };

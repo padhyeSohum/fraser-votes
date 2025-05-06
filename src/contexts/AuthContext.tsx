@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth, db } from '../lib/firebase';
 import { 
@@ -11,6 +10,7 @@ import {
   GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { PinAccess } from '@/types';
 
 interface UserData {
   id: string;
@@ -219,12 +219,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setError('');
       const userRef = doc(db, 'users', id.replace('@pdsb.net', ''));
       await updateDoc(userRef, { role: role });
+      
+      // Refresh the authorized users list to update UI
       await fetchAuthorizedUsers();
+      
+      // If the current user is being updated, refresh their data too
       if (currentUser?.uid === id) {
         await fetchUserData(currentUser.uid);
       }
+      
+      return true;
     } catch (e: any) {
       setError(e.message);
+      throw e; // Propagate error to handle it in components
     }
   };
 
@@ -238,8 +245,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         usersList.push(doc.data() as UserData);
       });
       setAuthorizedUsers(usersList);
+      return usersList;
     } catch (e: any) {
       setError(e.message);
+      throw e; // Propagate error to handle it in components
     }
   };
 
