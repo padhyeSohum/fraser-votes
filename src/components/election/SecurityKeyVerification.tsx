@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Key, Loader2, Check, X, RefreshCw } from "lucide-react";
 import { authenticateWithPasskey } from "@/lib/webauthn";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSecurityKey } from "@/contexts/SecurityKeyContext";
 
 interface SecurityKeyVerificationProps {
   open: boolean;
@@ -21,16 +22,26 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
   onCancel
 }) => {
   const { toast } = useToast();
+  const { isSecurityKeyVerified, setSecurityKeyVerified } = useSecurityKey();
   const [verificationStep, setVerificationStep] = useState<'initial' | 'verifying' | 'success' | 'error'>('initial');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Reset state when dialog opens
+  // Check if already verified when dialog opens
   useEffect(() => {
     if (open) {
       setVerificationStep('initial');
       setErrorMessage('');
+      
+      // If already verified in the last minute, auto-succeed
+      if (isSecurityKeyVerified('election')) {
+        console.log("Election security key already verified within the session period");
+        setVerificationStep('success');
+        setTimeout(() => {
+          onSuccess();
+        }, 1000);
+      }
     }
-  }, [open]);
+  }, [open, isSecurityKeyVerified, onSuccess]);
 
   const handleVerify = async () => {
     setVerificationStep('verifying');
@@ -42,6 +53,8 @@ const SecurityKeyVerification: React.FC<SecurityKeyVerificationProps> = ({
       
       if (result.success && result.verified) {
         console.log("Security key verification successful");
+        // Set the security key as verified for the session duration
+        setSecurityKeyVerified('election');
         setVerificationStep('success');
         setTimeout(() => {
           onSuccess();

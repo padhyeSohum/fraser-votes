@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ElectionProvider } from "./contexts/ElectionContext";
+import { SecurityKeyProvider } from "./contexts/SecurityKeyContext";
 import Footer from "./components/Footer";
 import LoadingScreen from "./components/LoadingScreen";
 
@@ -66,49 +66,51 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <ElectionProvider>
-        <TooltipProvider>
-          <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <div className="flex-grow">
-                <Suspense fallback={<LoadingScreen />}>
-                  <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/access-denied" element={<AccessDenied />} />
-                    
-                    <Route path="/" element={
-                      <ProtectedRoute>
-                        <Navigate to="/checkin" />
-                      </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/admin" element={
-                      <ProtectedRoute requireAdmin={true}>
-                        <Admin />
-                      </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/checkin" element={
-                      <ProtectedRoute requireCheckin={true}>
-                        <CheckIn />
-                      </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/vote" element={
-                      <ProtectedRoute requireVote={true}>
-                        <Vote />
-                      </ProtectedRoute>
-                    } />
-                    
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
-              </div>
-              <Footer />
-            </BrowserRouter>
-          </div>
-        </TooltipProvider>
+        <SecurityKeyProvider sessionDuration={60000}> {/* 1 minute session */}
+          <TooltipProvider>
+            <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <div className="flex-grow">
+                  <Suspense fallback={<LoadingScreen />}>
+                    <Routes>
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/access-denied" element={<AccessDenied />} />
+                      
+                      <Route path="/" element={
+                        <ProtectedRoute>
+                          <Navigate to="/checkin" />
+                        </ProtectedRoute>
+                      } />
+                      
+                      <Route path="/admin" element={
+                        <ProtectedRoute requireAdmin={true}>
+                          <Admin />
+                        </ProtectedRoute>
+                      } />
+                      
+                      <Route path="/checkin" element={
+                        <ProtectedRoute requireCheckin={true}>
+                          <CheckIn />
+                        </ProtectedRoute>
+                      } />
+                      
+                      <Route path="/vote" element={
+                        <ProtectedRoute requireVote={true}>
+                          <Vote />
+                        </ProtectedRoute>
+                      } />
+                      
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </div>
+                <Footer />
+              </BrowserRouter>
+            </div>
+          </TooltipProvider>
+        </SecurityKeyProvider>
       </ElectionProvider>
     </AuthProvider>
   </QueryClientProvider>
