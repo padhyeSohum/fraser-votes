@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -157,7 +158,10 @@ const Vote = () => {
       <div className="relative">
         <Header />
         {/* Invisible hover area at the top of the page when header is hidden */}
-        <div className="absolute top-0 left-0 w-full h-4 z-40" />
+        <div 
+          className="absolute top-0 left-0 w-full h-8 z-40" 
+          onMouseEnter={() => document.querySelector('header')?.classList.add('translate-y-0')}
+        />
       </div>
       
       <main className="container mx-auto py-8 px-4">

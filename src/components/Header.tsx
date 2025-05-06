@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ const Header = () => {
 
   return (
     <header 
-      className={`sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 transition-all duration-300 ${
+      className={`sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 transition-all duration-300 ease-in-out ${
         isVotePage && !isHovered ? '-translate-y-full' : 'translate-y-0'
       }`}
       onMouseEnter={() => setIsHovered(true)}
