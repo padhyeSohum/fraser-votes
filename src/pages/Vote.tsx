@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { CheckCircle, Lock, Vote as VoteIcon } from "lucide-react";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Candidate, Position, Vote as VoteType } from "@/types";
 import { useSecurityKey } from "@/contexts/SecurityKeyContext";
 
@@ -113,12 +114,12 @@ const Vote = () => {
   
   if (!isVotingActive) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header />
         
-        <main className="container mx-auto py-16 px-4">
+        <main className="container mx-auto py-16 px-4 flex-grow">
           <div className="max-w-lg mx-auto text-center">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 shadow-md">
               <Lock className="h-16 w-16 text-yellow-400 mx-auto mb-4" />
               <h1 className="text-2xl font-bold mb-2">Voting is not active</h1>
               <p className="text-gray-600">
@@ -127,18 +128,20 @@ const Vote = () => {
             </div>
           </div>
         </main>
+        
+        <Footer />
       </div>
     );
   }
   
   if (hasVoted) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header />
         
-        <main className="container mx-auto py-16 px-4">
+        <main className="container mx-auto py-16 px-4 flex-grow">
           <div className="max-w-lg mx-auto text-center">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-8">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-8 shadow-md animate-fade-in">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
               <h1 className="text-2xl font-bold mb-2">Thank You for Voting!</h1>
               <p className="text-gray-600 mb-6">
@@ -148,12 +151,14 @@ const Vote = () => {
             </div>
           </div>
         </main>
+        
+        <Footer />
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
       {/* Add header with hover area */}
       <div className="relative">
         <Header />
@@ -164,74 +169,89 @@ const Vote = () => {
         />
       </div>
       
-      <main className="container mx-auto py-8 px-4">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">{settings.title || "School Election"}</h1>
-          <div className="flex items-center gap-2">
+      <main className="container mx-auto py-8 px-4 flex-grow">
+        <div className="flex flex-col items-center justify-center mb-6">
+          <h1 className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+            {settings.title || "Student Activity Council Elections"}
+          </h1>
+          
+          <div className="flex items-center gap-2 mt-2 bg-blue-100 px-4 py-1 rounded-full">
             <VoteIcon className="h-5 w-5 text-blue-500" />
-            <span className="text-gray-600">Voting Session Active</span>
+            <span className="text-blue-700 font-medium">Voting Session Active</span>
           </div>
         </div>
         
         {!isPinCorrect ? (
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle>Unlock Polling Station</CardTitle>
-              <CardDescription>
-                Please enter your SAC member pin.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Input
-                type="password"
-                placeholder="Enter PIN"
-                value={enteredPin}
-                onChange={(e) => setEnteredPin(e.target.value)}
-                className="text-center text-xl tracking-widest"
-                maxLength={6}
-              />
-              {pinError && (
-                <p className="text-red-500 text-sm mt-2">{pinError}</p>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full"
-                onClick={handlePinSubmit}
-                disabled={!enteredPin}
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                Unlock Voting
-              </Button>
-            </CardFooter>
-          </Card>
-        ) : (
-          <div className="max-w-4xl mx-auto">
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle>Cast Your Vote</CardTitle>
-                <CardDescription>
-                  Select one candidate for each position
+          <div className="max-w-md mx-auto mt-12">
+            <Card className="border-t-4 border-t-blue-500 shadow-lg animate-fade-in">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-center">Unlock Polling Station</CardTitle>
+                <CardDescription className="text-center">
+                  Please enter your SAC member pin to access the ballot
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
+                <Input
+                  type="password"
+                  placeholder="Enter PIN"
+                  value={enteredPin}
+                  onChange={(e) => setEnteredPin(e.target.value)}
+                  className="text-center text-xl tracking-widest bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  maxLength={6}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && enteredPin) {
+                      handlePinSubmit();
+                    }
+                  }}
+                />
+                {pinError && (
+                  <p className="text-red-500 text-sm mt-2 text-center">{pinError}</p>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  onClick={handlePinSubmit}
+                  disabled={!enteredPin}
+                >
+                  <Lock className="h-4 w-4 mr-2" />
+                  Unlock Voting
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            <div className="text-center mt-6 text-sm text-gray-500">
+              SAC Elections powered by Fraser Votes
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-4xl mx-auto animate-fade-in">
+            <Card className="mb-8 shadow-lg overflow-hidden border-t-4 border-t-blue-500">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
+                <h2 className="text-xl font-bold text-gray-800">Cast Your Vote</h2>
+                <p className="text-sm text-gray-600">Select one candidate for each position</p>
+              </div>
+              
+              <CardContent className="p-6">
                 <div className="space-y-8">
                   {positions.map((position) => (
-                    <div key={position.id}>
-                      <h2 className="text-lg font-bold mb-4">{position.title}</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div key={position.id} className="pb-6 last:pb-0 border-b last:border-b-0 border-gray-100">
+                      <h2 className="text-lg font-bold mb-4 px-2 py-1 bg-blue-50 rounded-md text-blue-800 inline-block">
+                        {position.title}
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
                         {candidatesByPosition[position.id]?.map((candidate) => (
                           <div
                             key={candidate.id}
-                            className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                            className={`border rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md ${
                               selectedCandidates[position.id] === candidate.id
-                                ? "border-blue-500 bg-blue-50"
-                                : "hover:border-gray-300"
+                                ? "border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200"
+                                : "hover:border-gray-300 bg-white"
                             }`}
                             onClick={() => selectCandidate(position.id, candidate.id)}
                           >
-                            <div className="flex items-start gap-3">
-                              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
+                            <div className="flex items-start p-4">
+                              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 border-2 border-gray-100">
                                 {candidate.photoURL ? (
                                   <img
                                     src={candidate.photoURL}
@@ -244,16 +264,16 @@ const Vote = () => {
                                   </div>
                                 )}
                               </div>
-                              <div className="flex-1">
-                                <h3 className="font-medium">{candidate.name}</h3>
+                              <div className="flex-1 ml-4">
+                                <h3 className="font-medium text-gray-900">{candidate.name}</h3>
                                 {candidate.description && (
-                                  <p className="text-sm text-gray-500 mt-1">
+                                  <p className="text-sm text-gray-500 mt-1 line-clamp-3">
                                     {candidate.description}
                                   </p>
                                 )}
                               </div>
                               {selectedCandidates[position.id] === candidate.id && (
-                                <CheckCircle className="h-5 w-5 text-blue-500" />
+                                <CheckCircle className="h-5 w-5 text-blue-500 flex-shrink-0 ml-2" />
                               )}
                             </div>
                           </div>
@@ -263,29 +283,45 @@ const Vote = () => {
                   ))}
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="bg-gray-50 border-t px-6 py-4">
                 <Button
-                  className="w-full"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
                   onClick={handleSubmitVote}
                   disabled={positions.length !== Object.keys(selectedCandidates).length || loading}
                 >
-                  {loading ? "Submitting..." : "Submit Vote"}
+                  {loading ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Submitting...
+                    </span>
+                  ) : (
+                    <>Submit Vote</>
+                  )}
                 </Button>
               </CardFooter>
             </Card>
             
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-lg font-bold mb-2">Voting Instructions</h2>
-              <ol className="list-decimal pl-5 space-y-2">
+            <Card className="bg-white p-6 rounded-lg shadow-md mb-6 border-t-4 border-t-blue-500">
+              <h2 className="text-lg font-bold mb-3 text-gray-800">Voting Instructions</h2>
+              <ol className="list-decimal pl-5 space-y-2 text-gray-700">
                 <li>You must select one candidate for each position</li>
                 <li>Click on a candidate's card to select them</li>
                 <li>Review your choices carefully before submitting</li>
                 <li>Once submitted, you cannot change your vote</li>
               </ol>
+            </Card>
+            
+            <div className="text-center my-6 text-sm text-gray-500">
+              SAC Elections powered by Fraser Votes
             </div>
           </div>
         )}
       </main>
+      
+      <Footer />
     </div>
   );
 };
