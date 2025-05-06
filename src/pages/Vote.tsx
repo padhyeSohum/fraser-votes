@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -7,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { CheckCircle, Lock, Vote as VoteIcon } from "lucide-react";
 import Header from "@/components/Header";
 import { Candidate, Position, Vote as VoteType } from "@/types";
+import { useSecurityKey } from "@/contexts/SecurityKeyContext";
 
 const Vote = () => {
   const { currentUser } = useAuth();
   const { candidates, positions, settings, submitVote } = useElection();
+  const { clearSecurityKeySession } = useSecurityKey();
   const [enteredPin, setEnteredPin] = useState("");
   const [isPinCorrect, setIsPinCorrect] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState<Record<string, string>>({});
@@ -53,6 +56,17 @@ const Vote = () => {
     });
   };
   
+  const resetVotingSession = () => {
+    setIsPinCorrect(false);
+    setEnteredPin("");
+    setSelectedCandidates({});
+    setHasVoted(false);
+    setLoading(false);
+    setPinError("");
+    // Also clear the security key session so the next user needs to re-verify if needed
+    clearSecurityKeySession();
+  };
+  
   const handleSubmitVote = async () => {
     if (!currentUser) return;
     
@@ -69,12 +83,12 @@ const Vote = () => {
       
       await submitVote(votes);
       
-      // Show the success screen briefly before refreshing
+      // Show the success screen
       setHasVoted(true);
       
-      // Set a brief timeout before refreshing the page
+      // Set a timeout to automatically return to the pin entry screen after showing success
       setTimeout(() => {
-        window.location.reload();
+        resetVotingSession();
       }, 2000);
       
     } catch (error) {
@@ -130,7 +144,7 @@ const Vote = () => {
               <p className="text-gray-600 mb-6">
                 Your vote has been recorded successfully. Thank you for participating in this election.
               </p>
-              <p className="text-gray-500 italic text-sm">Refreshing page...</p>
+              <p className="text-gray-500 italic text-sm">Returning to voting screen...</p>
             </div>
           </div>
         </main>
