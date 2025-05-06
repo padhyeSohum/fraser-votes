@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth, db } from '../lib/firebase';
 import { 
@@ -166,7 +167,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const canAccessCheckin = () => {
-    return userData?.role === 'checkin' || userData?.role === 'admin' || userData?.role === 'superadmin';
+    return userData?.role === 'checkin' || userData?.role === 'admin' || userData?.role === 'superadmin' || userData?.role === 'vote';
   };
 
   const canAccessVote = () => {
