@@ -7,6 +7,7 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3478F6",
+  "id": "/",
   "icons": [
     {
       "src": "/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png",

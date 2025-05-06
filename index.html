@@ -25,10 +25,14 @@
     
     <!-- PWA related meta tags -->
     <meta name="theme-color" content="#3478F6" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
     
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" />
+    
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
 
   <body>
@@ -49,5 +53,11 @@
         });
       }
     </script>
+    <noscript>
+      <div style="padding: 2rem; text-align: center;">
+        <h1>JavaScript Required</h1>
+        <p>FraserVotes requires JavaScript to run. Please enable JavaScript in your browser settings and reload the page.</p>
+      </div>
+    </noscript>
   </body>
 </html>
