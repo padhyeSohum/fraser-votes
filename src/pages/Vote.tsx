@@ -122,7 +122,7 @@ const Vote = () => {
               <Lock className="h-16 w-16 text-yellow-400 mx-auto mb-4" />
               <h1 className="text-2xl font-bold mb-2">Voting is not active</h1>
               <p className="text-gray-600">
-                The voting session is currently closed. Please check back later or contact an administrator.
+                The voting session is currently closed. Please check back later or contact Aleena, Cody or Akshat if you believe this is an error.
               </p>
             </div>
           </div>
