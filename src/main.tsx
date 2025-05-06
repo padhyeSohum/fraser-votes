@@ -4,7 +4,6 @@ import { StrictMode } from 'react'
 import App from './App.tsx'
 import './index.css'
 import './lib/firebase' // Initialize Firebase
-import PWAInstallPrompt from './components/PWAInstallPrompt'
 
 const rootElement = document.getElementById("root");
 
@@ -15,7 +14,6 @@ if (!rootElement) {
     createRoot(rootElement).render(
       <StrictMode>
         <App />
-        <PWAInstallPrompt />
       </StrictMode>
     );
     console.log("Application successfully rendered");
