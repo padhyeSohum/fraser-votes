@@ -172,9 +172,9 @@ const Vote = () => {
         {!isPinCorrect ? (
           <Card className="max-w-md mx-auto">
             <CardHeader>
-              <CardTitle>Enter Voting PIN</CardTitle>
+              <CardTitle>Unlock Polling Station</CardTitle>
               <CardDescription>
-                Please enter the PIN provided by your administrator to access the voting page
+                Please enter your SAC member pin.
               </CardDescription>
             </CardHeader>
             <CardContent>
