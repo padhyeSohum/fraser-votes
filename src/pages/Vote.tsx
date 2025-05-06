@@ -221,7 +221,7 @@ const Vote = () => {
             </Card>
             
             <div className="text-center mt-6 text-sm text-gray-500">
-              SAC Elections powered by Fraser Votes
+              
             </div>
           </div>
         ) : (
