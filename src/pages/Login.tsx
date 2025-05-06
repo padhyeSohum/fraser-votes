@@ -1,25 +1,34 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { LogIn, AlertCircle } from "lucide-react";
+import { LogIn, AlertCircle, AlertTriangle } from "lucide-react";
 
 const Login = () => {
-  const { signInWithGoogle, signInWithPasskey, currentUser } = useAuth();
+  const { signInWithGoogle, signInWithPasskey, currentUser, userData } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showAccessDenied, setShowAccessDenied] = useState(false);
   const navigate = useNavigate();
 
-  if (currentUser) {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    if (currentUser && userData) {
+      // If user has a role other than "guest", navigate to home
+      if (userData.role !== "guest") {
+        navigate("/");
+      } else {
+        // User is authenticated but has "guest" role (not authorized)
+        setShowAccessDenied(true);
+      }
+    }
+  }, [currentUser, userData, navigate]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError("");
+    setShowAccessDenied(false);
     try {
       await signInWithGoogle();
     } catch (error: any) {
@@ -62,20 +71,36 @@ const Login = () => {
           </Alert>
         )}
 
-        <Button
-          onClick={handleGoogleSignIn}
-          className="w-full h-12 text-base font-medium bg-accent hover:bg-accent/90 transition-all duration-300 shadow-lg hover:shadow-xl"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-          ) : (
-            <>
-              <LogIn className="mr-2 h-5 w-5" />
-              Sign in with Google
-            </>
-          )}
-        </Button>
+        {showAccessDenied && (
+          <Alert variant="destructive" className="animate-fade-in">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <p className="font-medium">
+                You do not have access to FraserVotes at this time.
+              </p>
+              <p className="text-sm mt-1">
+                Please contact Aleena, Cody, or Akshat if you believe this is an error.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!showAccessDenied && (
+          <Button
+            onClick={handleGoogleSignIn}
+            className="w-full h-12 text-base font-medium bg-accent hover:bg-accent/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+            ) : (
+              <>
+                <LogIn className="mr-2 h-5 w-5" />
+                Sign in with Google
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
