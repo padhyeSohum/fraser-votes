@@ -1,0 +1,24 @@
+
+{
+  "name": "FraserVotes",
+  "short_name": "FraserVotes",
+  "description": "School Election Voting Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3478F6",
+  "icons": [
+    {
+      "src": "/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
