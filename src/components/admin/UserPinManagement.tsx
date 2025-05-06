@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trash, ToggleLeft, ToggleRight, Key, User as UserIcon, UserCheck, Edit, Plus, Mail, Shield } from "lucide-react";
+import { Trash, ToggleLeft, ToggleRight, Key, User as UserIcon, Edit, Plus, Mail, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SecurityKeyVerification from "@/components/admin/SecurityKeyVerification";
 import { PinAccess } from "@/types";
@@ -37,7 +37,7 @@ const UserPinManagement = () => {
   
   // PIN management states
   const [pendingAction, setPendingAction] = useState<{
-    type: 'add' | 'remove' | 'toggle' | 'assign' | 'unassign' | 'edit';
+    type: 'add' | 'remove' | 'toggle' | 'unassign' | 'edit';
     pinId?: string;
     userId?: string;
     pinData?: Omit<PinAccess, "id" | "createdAt">;
@@ -54,12 +54,6 @@ const UserPinManagement = () => {
   const [selectedUser, setSelectedUser] = useState<{ id: string, name: string, email: string, currentRole: UserRole } | null>(null);
   const [newRole, setNewRole] = useState<UserRole>("staff");
   const [isRoleKeyVerificationOpen, setIsRoleKeyVerificationOpen] = useState(false);
-  
-  // PIN assignment dialog states
-  const [isPinAssignDialogOpen, setIsPinAssignDialogOpen] = useState(false);
-  const [userForPinAssignment, setUserForPinAssignment] = useState<string | null>(null);
-  const [selectedPinForAssignment, setSelectedPinForAssignment] = useState<string>("");
-  const [pinAssignmentError, setPinAssignmentError] = useState("");
   
   // PIN edit dialog states
   const [isPinEditDialogOpen, setIsPinEditDialogOpen] = useState(false);
@@ -184,40 +178,6 @@ const UserPinManagement = () => {
     setRoleChangeDialogOpen(true);
   };
   
-  // PIN assignment functions
-  const openPinAssignmentDialog = (userId: string) => {
-    setUserForPinAssignment(userId);
-    setSelectedPinForAssignment("");
-    setPinAssignmentError("");
-    setIsPinAssignDialogOpen(true);
-  };
-  
-  const handleAssignPin = () => {
-    if (!userForPinAssignment) {
-      setPinAssignmentError("User ID is missing");
-      return;
-    }
-    
-    if (!selectedPinForAssignment) {
-      setPinAssignmentError("Please select a PIN to assign");
-      toast({
-        title: "Error",
-        description: "Please select a PIN to assign",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setPinAssignmentError("");
-    setPendingAction({
-      type: 'assign',
-      userId: userForPinAssignment,
-      pinId: selectedPinForAssignment
-    });
-    setIsPinAssignDialogOpen(false);
-    setIsKeyVerificationOpen(true);
-  };
-  
   const handleInitiateUnassignPin = (userId: string) => {
     setPendingAction({
       type: 'unassign',
@@ -300,13 +260,6 @@ const UserPinManagement = () => {
           toast({
             title: "Success",
             description: "PIN updated successfully"
-          });
-        } else if (pendingAction.type === 'assign' && pendingAction.userId && pendingAction.pinId) {
-          await updateUserWithPin(pendingAction.userId, pendingAction.pinId);
-          
-          toast({
-            title: "Success",
-            description: "PIN assigned to user successfully"
           });
         } else if (pendingAction.type === 'unassign' && pendingAction.userId) {
           await updateUserWithPin(pendingAction.userId, null);
@@ -529,9 +482,9 @@ const UserPinManagement = () => {
       
       <Card>
         <CardHeader>
-          <CardTitle>User & PIN Management</CardTitle>
+          <CardTitle>User Management</CardTitle>
           <CardDescription>
-            Manage authorized users, their roles, and assign PINs
+            Manage authorized users and their roles
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -610,14 +563,7 @@ const UserPinManagement = () => {
                             </Button>
                           </div>
                         ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openPinAssignmentDialog(user.id)}
-                          >
-                            <Key className="h-4 w-4 mr-2" />
-                            Assign PIN
-                          </Button>
+                          <span className="text-gray-400 text-sm">No PIN assigned</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -686,44 +632,6 @@ const UserPinManagement = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* PIN assignment dialog */}
-      <Dialog open={isPinAssignDialogOpen} onOpenChange={setIsPinAssignDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Assign PIN to User</DialogTitle>
-            <DialogDescription>
-              Select a PIN to assign to this user
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Select PIN</div>
-              <Select value={selectedPinForAssignment} onValueChange={setSelectedPinForAssignment}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a PIN" />
-                </SelectTrigger>
-                <SelectContent>
-                  {settings.pins?.filter(pin => pin.isActive).map(pin => (
-                    <SelectItem key={pin.id} value={pin.id}>
-                      {pin.name} (PIN: {pin.pin})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {pinAssignmentError && (
-                <p className="text-sm text-red-500 mt-2">{pinAssignmentError}</p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPinAssignDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAssignPin}>Assign PIN</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* PIN edit dialog */}
       <Dialog open={isPinEditDialogOpen} onOpenChange={setIsPinEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -778,4 +686,3 @@ const UserPinManagement = () => {
 };
 
 export default UserPinManagement;
-
