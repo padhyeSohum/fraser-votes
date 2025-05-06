@@ -11,11 +11,14 @@ if (!rootElement) {
   console.error("Failed to find the root element");
 } else {
   try {
-    createRoot(rootElement).render(
+    const root = createRoot(rootElement);
+    
+    root.render(
       <StrictMode>
         <App />
       </StrictMode>
     );
+    
     console.log("Application successfully rendered");
   } catch (error) {
     console.error("Error rendering the application:", error);

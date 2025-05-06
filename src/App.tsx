@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -63,15 +64,15 @@ const ProtectedRoute = ({
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <ElectionProvider>
-        <SecurityKeyProvider sessionDuration={60000}> {/* 1 minute session */}
-          <TooltipProvider>
-            <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <ElectionProvider>
+            <SecurityKeyProvider sessionDuration={60000}> {/* 1 minute session */}
+              <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
+                <Toaster />
+                <Sonner />
                 <div className="flex-grow">
                   <Suspense fallback={<LoadingScreen />}>
                     <Routes>
@@ -107,13 +108,13 @@ const App = () => (
                   </Suspense>
                 </div>
                 <Footer />
-              </BrowserRouter>
-            </div>
-          </TooltipProvider>
-        </SecurityKeyProvider>
-      </ElectionProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+              </div>
+            </SecurityKeyProvider>
+          </ElectionProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </BrowserRouter>
 );
 
 export default App;
