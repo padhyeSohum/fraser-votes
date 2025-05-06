@@ -1,5 +1,6 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { auth, db } from '../firebase';
+import { auth, db } from '../lib/firebase';
 import { 
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -27,6 +28,8 @@ interface AuthContextProps {
   error: string;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithPasskey: () => Promise<void>;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
   canAccessCheckin: () => boolean;
@@ -46,6 +49,8 @@ const AuthContext = createContext<AuthContextProps>({
   error: '',
   login: async () => {},
   logout: async () => {},
+  signInWithGoogle: async () => {},
+  signInWithPasskey: async () => {},
   isAdmin: () => false,
   isSuperAdmin: () => false,
   canAccessCheckin: () => false,
@@ -104,6 +109,49 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setError('');
       await signOut(auth);
       setUserData(null);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      setError('');
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ hd: 'pdsb.net' });
+      const { user } = await signInWithPopup(auth, provider);
+      
+      // Check if user exists in our database
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      
+      if (!userDoc.exists()) {
+        // If user doesn't exist, create a new user with default role
+        await setDoc(doc(db, 'users', user.uid), {
+          id: user.uid,
+          email: user.email,
+          name: user.displayName,
+          role: 'guest',
+          lastLogin: new Date()
+        });
+      } else {
+        // Update last login
+        await updateDoc(doc(db, 'users', user.uid), {
+          lastLogin: new Date()
+        });
+      }
+      
+      await fetchUserData(user.uid);
+    } catch (e: any) {
+      console.error("Google sign-in error:", e);
+      setError(e.message);
+    }
+  };
+
+  // Placeholder for passkey functionality - can be implemented later
+  const signInWithPasskey = async () => {
+    try {
+      setError('');
+      console.log("Passkey sign-in not implemented yet");
     } catch (e: any) {
       setError(e.message);
     }
@@ -199,7 +247,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, { assignedPinId: pinId });
-      return true;
+      // Refresh user list
+      await fetchAuthorizedUsers();
+      // If the current user is being updated, refresh their data too
+      if (currentUser && currentUser.uid === userId) {
+        await fetchUserData(currentUser.uid);
+      }
     } catch (error) {
       console.error("Error updating user PIN assignment:", error);
       throw error;
@@ -215,6 +268,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         error,
         login,
         logout,
+        signInWithGoogle,
+        signInWithPasskey,
         isAdmin,
         isSuperAdmin,
         canAccessCheckin,
