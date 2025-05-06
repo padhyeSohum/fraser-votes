@@ -109,13 +109,13 @@ const App = () => (
                   </Suspense>
                 </div>
                 <Footer />
+                <PWAInstallPrompt />
               </BrowserRouter>
             </div>
           </TooltipProvider>
         </SecurityKeyProvider>
       </ElectionProvider>
     </AuthProvider>
-    <PWAInstallPrompt />
   </QueryClientProvider>
 );
 
