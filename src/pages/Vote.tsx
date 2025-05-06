@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { CheckCircle, Lock, Vote as VoteIcon } from "lucide-react";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { Candidate, Position, Vote as VoteType } from "@/types";
 import { useSecurityKey } from "@/contexts/SecurityKeyContext";
 
@@ -129,7 +128,7 @@ const Vote = () => {
           </div>
         </main>
         
-        <Footer />
+        {/* Footer is now handled by App.tsx, so we don't need to include it here */}
       </div>
     );
   }
@@ -152,7 +151,7 @@ const Vote = () => {
           </div>
         </main>
         
-        <Footer />
+        {/* Footer is now handled by App.tsx, so we don't need to include it here */}
       </div>
     );
   }
@@ -192,7 +191,9 @@ const Vote = () => {
               </CardHeader>
               <CardContent className="pt-4">
                 <Input
-                  type="password"
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Enter PIN"
                   value={enteredPin}
                   onChange={(e) => setEnteredPin(e.target.value)}
@@ -221,7 +222,7 @@ const Vote = () => {
             </Card>
             
             <div className="text-center mt-6 text-sm text-gray-500">
-              
+              SAC Elections powered by Fraser Votes
             </div>
           </div>
         ) : (
@@ -321,7 +322,7 @@ const Vote = () => {
         )}
       </main>
       
-      <Footer />
+      {/* Footer is now handled by App.tsx, so we don't need to include it here */}
     </div>
   );
 };
