@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useElection } from "@/contexts/ElectionContext";
@@ -154,7 +153,12 @@ const Vote = () => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      {/* Add header with hover area */}
+      <div className="relative">
+        <Header />
+        {/* Invisible hover area at the top of the page when header is hidden */}
+        <div className="absolute top-0 left-0 w-full h-4 z-40" />
+      </div>
       
       <main className="container mx-auto py-8 px-4">
         <div className="flex items-center justify-between mb-8">

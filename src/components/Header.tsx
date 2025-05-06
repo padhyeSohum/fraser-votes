@@ -1,12 +1,17 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Settings } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const Header = () => {
   const { currentUser, userData, logout, canAccessCheckin, canAccessVote, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isHovered, setIsHovered] = useState(false);
+  
+  // Check if we're on the vote page
+  const isVotePage = location.pathname === "/vote";
 
   const handleLogout = async () => {
     await logout();
@@ -14,7 +19,13 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
+    <header 
+      className={`sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 transition-all duration-300 ${
+        isVotePage && !isHovered ? '-translate-y-full' : 'translate-y-0'
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
