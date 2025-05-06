@@ -227,8 +227,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (currentUser?.uid === id) {
         await fetchUserData(currentUser.uid);
       }
-      
-      return true;
     } catch (e: any) {
       setError(e.message);
       throw e; // Propagate error to handle it in components
@@ -245,7 +243,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         usersList.push(doc.data() as UserData);
       });
       setAuthorizedUsers(usersList);
-      return usersList;
     } catch (e: any) {
       setError(e.message);
       throw e; // Propagate error to handle it in components
