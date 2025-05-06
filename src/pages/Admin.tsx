@@ -174,7 +174,8 @@ const Admin = () => {
     
     updatedPins.push({
       id: uuidv4(),
-      ...newPin
+      ...newPin,
+      createdAt: new Date() // Add createdAt property
     });
     
     updateSettings({ 

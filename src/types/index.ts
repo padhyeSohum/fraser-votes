@@ -39,6 +39,7 @@ export interface Vote {
   candidateId: string;
   position: string;
   anonymous: boolean;
+  studentId?: string;
   timestamp?: Date;
 }
 
