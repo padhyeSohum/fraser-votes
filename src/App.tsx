@@ -16,6 +16,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const CheckIn = lazy(() => import("./pages/CheckIn"));
 const Vote = lazy(() => import("./pages/Vote"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 
 const queryClient = new QueryClient();
 
@@ -43,19 +44,19 @@ const ProtectedRoute = ({
   }
   
   if (requireSuperAdmin && !isSuperAdmin()) {
-    return <Navigate to="/" />;
+    return <AccessDenied />;
   }
   
   if (requireAdmin && !isAdmin()) {
-    return <Navigate to="/" />;
+    return <AccessDenied />;
   }
   
   if (requireCheckin && !canAccessCheckin()) {
-    return <Navigate to="/" />;
+    return <AccessDenied />;
   }
   
   if (requireVote && !canAccessVote()) {
-    return <Navigate to="/" />;
+    return <AccessDenied />;
   }
   
   return children;
@@ -74,6 +75,7 @@ const App = () => (
                 <Suspense fallback={<LoadingScreen />}>
                   <Routes>
                     <Route path="/login" element={<Login />} />
+                    <Route path="/access-denied" element={<AccessDenied />} />
                     
                     <Route path="/" element={
                       <ProtectedRoute>
