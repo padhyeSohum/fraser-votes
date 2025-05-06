@@ -5,15 +5,13 @@ import { Button } from "@/components/ui/button";
 import { LogOut, User, Settings } from "lucide-react";
 
 const Header = () => {
-  const { currentUser, userData, logout } = useAuth();
+  const { currentUser, userData, logout, canAccessCheckin, canAccessVote, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
     navigate("/login");
   };
-
-  const isAdmin = userData?.role === "admin" || userData?.role === "superadmin";
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
@@ -31,19 +29,23 @@ const Header = () => {
           </div>
 
           <nav className="hidden md:flex items-center gap-6">
-            <Link 
-              to="/checkin" 
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Check-In
-            </Link>
-            <Link 
-              to="/vote" 
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Vote
-            </Link>
-            {isAdmin && (
+            {canAccessCheckin() && (
+              <Link 
+                to="/checkin" 
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Check-In
+              </Link>
+            )}
+            {canAccessVote() && (
+              <Link 
+                to="/vote" 
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Vote
+              </Link>
+            )}
+            {isAdmin() && (
               <Link 
                 to="/admin" 
                 className="text-gray-600 hover:text-gray-900 transition-colors"
@@ -67,9 +69,16 @@ const Header = () => {
                     <User className="h-full w-full p-1.5 text-gray-500" />
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {currentUser.displayName}
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-700">
+                    {currentUser.displayName}
+                  </span>
+                  {userData?.role && (
+                    <span className="text-xs text-gray-500 capitalize">
+                      {userData.role}
+                    </span>
+                  )}
+                </div>
               </div>
               
               <Button

@@ -9,13 +9,13 @@ import {
   getAuth,
   signInAnonymously
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 interface UserData {
   email: string;
-  role: "superadmin" | "admin" | "staff" | "student" | "guest";
+  role: "superadmin" | "admin" | "staff" | "student" | "guest" | "checkin" | "vote";
   displayName?: string;
   photoURL?: string;
   createdAt?: any;
@@ -26,7 +26,7 @@ interface AuthorizedUser {
   id: string;
   email: string;
   name?: string;
-  role: "superadmin" | "admin" | "staff" | "student" | "guest";
+  role: "superadmin" | "admin" | "staff" | "student" | "guest" | "checkin" | "vote";
   createdAt?: any;
 }
 
@@ -39,10 +39,13 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
+  canAccessCheckin: () => boolean;
+  canAccessVote: () => boolean;
   authorizedUsers: AuthorizedUser[];
   fetchAuthorizedUsers: () => Promise<void>;
   addAuthorizedUser: (user: Omit<AuthorizedUser, "id" | "createdAt">) => Promise<void>;
   removeAuthorizedUser: (userId: string) => Promise<void>;
+  updateUserRole: (userId: string, newRole: AuthorizedUser['role']) => Promise<void>;
   isUserAuthorized: (email: string) => Promise<boolean>;
 }
 
@@ -155,6 +158,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast({
         title: "Error",
         description: "Failed to remove user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateUserRole = async (userId: string, newRole: AuthorizedUser['role']): Promise<void> => {
+    try {
+      const userRef = doc(db, "authorizedUsers", userId);
+      await updateDoc(userRef, { 
+        role: newRole,
+        updatedAt: serverTimestamp() 
+      });
+      
+      toast({
+        title: "Success",
+        description: "User role has been updated",
+      });
+      
+      await fetchAuthorizedUsers();
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role",
         variant: "destructive",
       });
     }
@@ -335,6 +362,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isSuperAdmin = () => {
     return userData?.role === "superadmin";
   };
+  
+  const canAccessCheckin = () => {
+    return userData?.role === "superadmin" || userData?.role === "admin" || userData?.role === "checkin";
+  };
+  
+  const canAccessVote = () => {
+    return userData?.role === "superadmin" || userData?.role === "admin" || userData?.role === "vote";
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -370,10 +405,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     isAdmin,
     isSuperAdmin,
+    canAccessCheckin,
+    canAccessVote,
     authorizedUsers,
     fetchAuthorizedUsers,
     addAuthorizedUser,
     removeAuthorizedUser,
+    updateUserRole,
     isUserAuthorized
   };
 

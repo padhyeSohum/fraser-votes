@@ -9,6 +9,7 @@ import { Trash, UserPlus, Mail, User as UserIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import SecurityKeyVerification from "@/components/admin/SecurityKeyVerification";
+import UserRoleManagement from "@/components/admin/UserRoleManagement";
 
 const UserManagement = () => {
   const { authorizedUsers, addAuthorizedUser, removeAuthorizedUser, fetchAuthorizedUsers } = useAuth();
@@ -185,6 +186,18 @@ const UserManagement = () => {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Role Management</CardTitle>
+          <CardDescription>
+            Control user access to different parts of the application
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <UserRoleManagement />
         </CardContent>
       </Card>
 

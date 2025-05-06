@@ -22,13 +22,17 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ 
   children, 
   requireAdmin = false,
-  requireSuperAdmin = false
+  requireSuperAdmin = false,
+  requireCheckin = false,
+  requireVote = false
 }: { 
   children: JSX.Element, 
   requireAdmin?: boolean,
-  requireSuperAdmin?: boolean
+  requireSuperAdmin?: boolean,
+  requireCheckin?: boolean,
+  requireVote?: boolean
 }) => {
-  const { currentUser, userData, loading, isAdmin, isSuperAdmin } = useAuth();
+  const { currentUser, userData, loading, isAdmin, isSuperAdmin, canAccessCheckin, canAccessVote } = useAuth();
   
   if (loading) {
     return <LoadingScreen message="Checking authentication..." />;
@@ -43,6 +47,14 @@ const ProtectedRoute = ({
   }
   
   if (requireAdmin && !isAdmin()) {
+    return <Navigate to="/" />;
+  }
+  
+  if (requireCheckin && !canAccessCheckin()) {
+    return <Navigate to="/" />;
+  }
+  
+  if (requireVote && !canAccessVote()) {
     return <Navigate to="/" />;
   }
   
@@ -65,7 +77,7 @@ const App = () => (
                     
                     <Route path="/" element={
                       <ProtectedRoute>
-                        <CheckIn />
+                        <Navigate to="/checkin" />
                       </ProtectedRoute>
                     } />
                     
@@ -76,13 +88,13 @@ const App = () => (
                     } />
                     
                     <Route path="/checkin" element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requireCheckin={true}>
                         <CheckIn />
                       </ProtectedRoute>
                     } />
                     
                     <Route path="/vote" element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requireVote={true}>
                         <Vote />
                       </ProtectedRoute>
                     } />
