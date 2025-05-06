@@ -1,423 +1,235 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { auth, db } from '../firebase';
 import { 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signOut, 
-  onAuthStateChanged, 
-  User,
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  getAuth,
-  signInAnonymously
-} from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import { useToast } from "@/hooks/use-toast";
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
 
 interface UserData {
-  email: string;
-  role: "superadmin" | "admin" | "staff" | "student" | "guest" | "checkin" | "vote";
-  displayName?: string;
-  photoURL?: string;
-  createdAt?: any;
-  authorized?: boolean;
-}
-
-interface AuthorizedUser {
   id: string;
   email: string;
   name?: string;
   role: "superadmin" | "admin" | "staff" | "student" | "guest" | "checkin" | "vote";
-  createdAt?: any;
+  assignedPinId?: string | null;
+  lastLogin?: Date;
 }
 
-interface AuthContextType {
-  currentUser: User | null;
+interface AuthContextProps {
+  currentUser: any;
   userData: UserData | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
-  signInWithPasskey: (role?: string) => Promise<boolean>;
+  error: string;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
   canAccessCheckin: () => boolean;
   canAccessVote: () => boolean;
-  authorizedUsers: AuthorizedUser[];
+  authorizedUsers: UserData[];
+  addAuthorizedUser: (user: Omit<UserData, 'id' | 'lastLogin'>) => Promise<void>;
+  removeAuthorizedUser: (id: string) => Promise<void>;
+  updateUserRole: (id: string, role: UserData['role']) => Promise<void>;
   fetchAuthorizedUsers: () => Promise<void>;
-  addAuthorizedUser: (user: Omit<AuthorizedUser, "id" | "createdAt">) => Promise<void>;
-  removeAuthorizedUser: (userId: string) => Promise<void>;
-  updateUserRole: (userId: string, newRole: AuthorizedUser['role']) => Promise<void>;
-  isUserAuthorized: (email: string) => Promise<boolean>;
+  updateUserWithPin: (userId: string, pinId: string | null) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextProps>({
+  currentUser: null,
+  userData: null,
+  loading: true,
+  error: '',
+  login: async () => {},
+  logout: async () => {},
+  isAdmin: () => false,
+  isSuperAdmin: () => false,
+  canAccessCheckin: () => false,
+  canAccessVote: () => false,
+  authorizedUsers: [],
+  addAuthorizedUser: async () => {},
+  removeAuthorizedUser: async () => {},
+  updateUserRole: async () => {},
+  fetchAuthorizedUsers: async () => {},
+  updateUserWithPin: async () => {},
+});
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [currentUser, setCurrentUser] = useState(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authorizedUsers, setAuthorizedUsers] = useState<AuthorizedUser[]>([]);
-  const { toast } = useToast();
-
-  const isUserAuthorized = async (email: string): Promise<boolean> => {
-    try {
-      const superadminEmails = [
-        "909957@pdsb.net", 
-        "728266@pdsb.net", 
-        "816776@pdsb.net", 
-        "p0042314@pdsb.net",
-        "p0076668@pdsb.net"
-      ];
-      if (superadminEmails.includes(email)) {
-        return true;
-      }
-      
-      const q = query(collection(db, "authorizedUsers"), where("email", "==", email));
-      const querySnapshot = await getDocs(q);
-      
-      return !querySnapshot.empty;
-    } catch (error) {
-      console.error("Error checking authorization:", error);
-      return false;
-    }
-  };
-
-  const fetchAuthorizedUsers = async (): Promise<void> => {
-    try {
-      const usersCollection = collection(db, "authorizedUsers");
-      const usersSnapshot = await getDocs(usersCollection);
-      
-      const users: AuthorizedUser[] = [];
-      usersSnapshot.forEach((doc) => {
-        users.push({
-          id: doc.id,
-          ...doc.data() as Omit<AuthorizedUser, "id">
-        });
-      });
-      
-      setAuthorizedUsers(users);
-    } catch (error) {
-      console.error("Error fetching authorized users:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch authorized users",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const addAuthorizedUser = async (user: Omit<AuthorizedUser, "id" | "createdAt">): Promise<void> => {
-    try {
-      const usersCollection = collection(db, "authorizedUsers");
-      const newUserRef = doc(usersCollection);
-      
-      await setDoc(newUserRef, {
-        ...user,
-        createdAt: serverTimestamp()
-      });
-      
-      toast({
-        title: "Success",
-        description: `${user.name || user.email} has been authorized`,
-      });
-      
-      await fetchAuthorizedUsers();
-    } catch (error) {
-      console.error("Error adding authorized user:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add user",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const removeAuthorizedUser = async (userId: string): Promise<void> => {
-    try {
-      const userRef = doc(db, "authorizedUsers", userId);
-      await setDoc(userRef, { 
-        deleted: true,
-        deletedAt: serverTimestamp() 
-      }, { merge: true });
-      
-      toast({
-        title: "Success",
-        description: "User has been removed",
-      });
-      
-      await fetchAuthorizedUsers();
-    } catch (error) {
-      console.error("Error removing authorized user:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove user",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updateUserRole = async (userId: string, newRole: AuthorizedUser['role']): Promise<void> => {
-    try {
-      const userRef = doc(db, "authorizedUsers", userId);
-      await updateDoc(userRef, { 
-        role: newRole,
-        updatedAt: serverTimestamp() 
-      });
-      
-      toast({
-        title: "Success",
-        description: "User role has been updated",
-      });
-      
-      await fetchAuthorizedUsers();
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update user role",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const fetchUserData = async (user: User) => {
-    try {
-      const authorized = await isUserAuthorized(user.email || "");
-      
-      if (!authorized) {
-        await signOut(auth);
-        toast({
-          title: "Access Denied",
-          description: "You do not have access to FraserVotes. Please contact an administrator.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const fallbackUserData: UserData = {
-        email: user.email || "",
-        role: user.email === "909957@pdsb.net" ? "superadmin" : "guest",
-        displayName: user.displayName || "",
-        photoURL: user.photoURL || "",
-        authorized: true
-      };
-      
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-      
-      if (userSnap.exists()) {
-        setUserData({
-          ...userSnap.data() as UserData,
-          authorized: true
-        });
-        console.log("Found existing user record:", userSnap.data());
-      } else {
-        const newUserData: UserData = {
-          ...fallbackUserData,
-          createdAt: serverTimestamp(),
-        };
-        
-        await setDoc(userRef, newUserData);
-        setUserData(newUserData);
-        console.log("Created new user record:", newUserData);
-        toast({
-          title: "Account Created",
-          description: "Welcome! Your account has been set up.",
-        });
-      }
-    } catch (error: any) {
-      console.error("Error fetching user data:", error);
-      
-      await signOut(auth);
-      setUserData(null);
-      
-      toast({
-        title: "Authentication Error",
-        description: "There was a problem verifying your access. Please try again later.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        hd: "pdsb.net",
-      });
-      
-      const result = await signInWithPopup(auth, provider);
-      
-      if (!result.user.email?.endsWith("@pdsb.net")) {
-        await signOut(auth);
-        toast({
-          title: "Authentication Failed",
-          description: "You must use a @pdsb.net email to sign in.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const isAuthorized = await isUserAuthorized(result.user.email);
-      
-      if (!isAuthorized) {
-        await signOut(auth);
-        toast({
-          title: "Access Denied",
-          description: "You do not have access to FraserVotes. Please contact an administrator.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      toast({
-        title: "Success",
-        description: "Signed in successfully",
-      });
-    } catch (error: any) {
-      console.error("Error signing in with Google:", error);
-      
-      let errorMessage = "Failed to sign in with Google";
-      
-      if (error.code === "auth/unauthorized-domain") {
-        errorMessage = "This domain is not authorized for authentication. Please use the production URL.";
-      } else if (error.code === "auth/popup-closed-by-user") {
-        errorMessage = "Sign-in popup was closed. Please try again.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast({
-        title: "Authentication Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      
-      throw error;
-    }
-  };
-
-  const signInWithPasskey = async (): Promise<boolean> => {
-    try {
-      console.log("Signing in with security key");
-      
-      await signInAnonymously(auth);
-      
-      const securityKeyUserData: UserData = {
-        email: "security-key@frasersecondary.org",
-        role: "admin",
-        displayName: "Security Key User",
-        authorized: true
-      };
-      
-      setUserData(securityKeyUserData);
-      
-      toast({
-        title: "Success",
-        description: "Signed in with security key",
-      });
-      
-      return true;
-    } catch (error: any) {
-      console.error("Error signing in with passkey:", error);
-      
-      toast({
-        title: "Authentication Failed",
-        description: error.message || "Failed to sign in with security key",
-        variant: "destructive",
-      });
-      
-      return false;
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await signOut(auth);
-      toast({
-        title: "Signed Out",
-        description: "You have been signed out successfully",
-      });
-    } catch (error: any) {
-      console.error("Error signing out:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to sign out",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const isAdmin = () => {
-    return userData?.role === "admin" || userData?.role === "superadmin";
-  };
-
-  const isSuperAdmin = () => {
-    return userData?.role === "superadmin";
-  };
-  
-  const canAccessCheckin = () => {
-    return userData?.role === "superadmin" || userData?.role === "admin" || userData?.role === "checkin";
-  };
-  
-  const canAccessVote = () => {
-    return userData?.role === "superadmin" || userData?.role === "admin" || userData?.role === "vote";
-  };
+  const [error, setError] = useState('');
+  const [authorizedUsers, setAuthorizedUsers] = useState<UserData[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        if (user.isAnonymous) {
-          setLoading(false);
-        } else {
-          await fetchUserData(user);
-          setLoading(false);
-        }
+        await fetchUserData(user.uid);
       } else {
         setUserData(null);
-        setLoading(false);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (currentUser && isAdmin()) {
-      fetchAuthorizedUsers();
-    }
-  }, [currentUser, userData]);
+    fetchAuthorizedUsers();
+  }, []);
 
-  const value: AuthContextType = {
-    currentUser,
-    userData,
-    loading,
-    signInWithGoogle,
-    signInWithPasskey,
-    logout,
-    isAdmin,
-    isSuperAdmin,
-    canAccessCheckin,
-    canAccessVote,
-    authorizedUsers,
-    fetchAuthorizedUsers,
-    addAuthorizedUser,
-    removeAuthorizedUser,
-    updateUserRole,
-    isUserAuthorized
+  const login = async (email: string, password: string) => {
+    try {
+      setError('');
+      const { user } = await signInWithEmailAndPassword(auth, email, password);
+      await fetchUserData(user.uid);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      setError('');
+      await signOut(auth);
+      setUserData(null);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const isAdmin = () => {
+    return userData?.role === 'admin' || userData?.role === 'superadmin';
+  };
+
+  const isSuperAdmin = () => {
+    return userData?.role === 'superadmin';
+  };
+
+  const canAccessCheckin = () => {
+    return userData?.role === 'checkin' || userData?.role === 'admin' || userData?.role === 'superadmin';
+  };
+
+  const canAccessVote = () => {
+    return userData?.role === 'vote' || userData?.role === 'admin' || userData?.role === 'superadmin';
+  };
+
+  const fetchUserData = async (uid: string) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        setUserData(userDoc.data() as UserData);
+      } else {
+        setUserData(null);
+      }
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const addAuthorizedUser = async (user: Omit<UserData, 'id' | 'lastLogin'>) => {
+    try {
+      setError('');
+      const userRef = doc(db, 'users', user.email.replace('@pdsb.net', ''));
+      await setDoc(userRef, { ...user, id: user.email.replace('@pdsb.net', '') });
+      await fetchAuthorizedUsers();
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const removeAuthorizedUser = async (id: string) => {
+    try {
+      setError('');
+      // const userRef = doc(db, 'users', id);
+      // await deleteDoc(userRef);
+      
+      const userRef = doc(db, 'users', id.replace('@pdsb.net', ''));
+      await updateDoc(userRef, {
+        role: 'guest'
+      });
+      
+      await fetchAuthorizedUsers();
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const updateUserRole = async (id: string, role: UserData['role']) => {
+    try {
+      setError('');
+      const userRef = doc(db, 'users', id.replace('@pdsb.net', ''));
+      await updateDoc(userRef, { role: role });
+      await fetchAuthorizedUsers();
+      if (currentUser?.uid === id) {
+        await fetchUserData(currentUser.uid);
+      }
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const fetchAuthorizedUsers = async () => {
+    try {
+      setError('');
+      const usersCollection = collection(db, 'users');
+      const usersSnapshot = await getDocs(usersCollection);
+      const usersList: UserData[] = [];
+      usersSnapshot.forEach((doc) => {
+        usersList.push(doc.data() as UserData);
+      });
+      setAuthorizedUsers(usersList);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const updateUserWithPin = async (userId: string, pinId: string | null) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, { assignedPinId: pinId });
+      return true;
+    } catch (error) {
+      console.error("Error updating user PIN assignment:", error);
+      throw error;
+    }
   };
 
   return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        userData,
+        loading,
+        error,
+        login,
+        logout,
+        isAdmin,
+        isSuperAdmin,
+        canAccessCheckin,
+        canAccessVote,
+        authorizedUsers,
+        addAuthorizedUser,
+        removeAuthorizedUser,
+        updateUserRole,
+        fetchAuthorizedUsers,
+        updateUserWithPin,
+      }}
+    >
+      {children}
     </AuthContext.Provider>
   );
 };
+
+export default AuthContext;

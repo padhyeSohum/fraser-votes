@@ -12,15 +12,14 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
-import { Position, Candidate, PinAccess } from "@/types";
+import { Position, Candidate } from "@/types";
 import { v4 as uuidv4 } from 'uuid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Header from "@/components/Header";
 import StudentManagement from "@/components/admin/StudentManagement";
-import UserManagement from "@/components/admin/UserManagement";
+import UserPinManagement from "@/components/admin/UserPinManagement";
 import SecurityKeyManagement from "@/components/admin/SecurityKeyManagement";
 import SecurityKeyVerification from "@/components/election/SecurityKeyVerification";
-import PinManagement from "@/components/admin/PinManagement";
 import { useToast } from "@/hooks/use-toast";
 
 const Admin = () => {
@@ -434,16 +433,12 @@ const Admin = () => {
                   <Shield className="h-4 w-4 mr-2" />
                   Security
                 </TabsTrigger>
-                <TabsTrigger value="pins" className="rounded-sm px-4 py-2 hover:text-foreground data-[state=active]:text-primary">
-                  <Key className="h-4 w-4 mr-2" />
-                  PIN Access
+                <TabsTrigger value="users" className="rounded-sm px-4 py-2 hover:text-foreground data-[state=active]:text-primary">
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Users & PINs
                 </TabsTrigger>
               </>
             )}
-            <TabsTrigger value="users" className="rounded-sm px-4 py-2 hover:text-foreground data-[state=active]:text-primary">
-              <UserCheck className="h-4 w-4 mr-2" />
-              User Access
-            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="candidates" className="space-y-6">
@@ -860,27 +855,13 @@ const Admin = () => {
           )}
           
           {isSuperAdmin() && (
-            <TabsContent value="pins">
+            <TabsContent value="users">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold">PIN Access Management</h2>
+                <h2 className="text-xl font-semibold">User & PIN Management</h2>
               </div>
-              <SecurityKeyVerification
-                open={isKeyVerificationOpen}
-                onOpenChange={setIsKeyVerificationOpen}
-                onSuccess={handleKeyVerificationSuccess}
-                onCancel={handleKeyVerificationCancel}
-              />
-              <PinManagement />
+              <UserPinManagement />
             </TabsContent>
           )}
-          
-          <TabsContent value="users">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">User Access Management</h2>
-            </div>
-            
-            <UserManagement />
-          </TabsContent>
         </Tabs>
         
         {!isSuperAdmin() && currentTab === "results" && (
