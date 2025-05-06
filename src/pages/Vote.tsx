@@ -191,7 +191,7 @@ const Vote = () => {
               </CardHeader>
               <CardContent className="pt-4">
                 <Input
-                  type="number"
+                  type="password"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   placeholder="Enter PIN"
