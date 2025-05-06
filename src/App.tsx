@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +9,6 @@ import { ElectionProvider } from "./contexts/ElectionContext";
 import { SecurityKeyProvider } from "./contexts/SecurityKeyContext";
 import Footer from "./components/Footer";
 import LoadingScreen from "./components/LoadingScreen";
-import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 // Lazy load page components for better performance
 const Login = lazy(() => import("./pages/Login"));
@@ -109,7 +107,6 @@ const App = () => (
                   </Suspense>
                 </div>
                 <Footer />
-                <PWAInstallPrompt />
               </BrowserRouter>
             </div>
           </TooltipProvider>
