@@ -19,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 type UserRole = "superadmin" | "admin" | "staff" | "student" | "guest" | "checkin" | "vote";
 
 const UserPinManagement = () => {
-  const { authorizedUsers, updateUserRole, removeAuthorizedUser, addAuthorizedUser, isSuperAdmin, fetchAuthorizedUsers } = useAuth();
+  const { authorizedUsers, updateUserRole, removeAuthorizedUser, addAuthorizedUser, isSuperAdmin, fetchAuthorizedUsers, updateUserWithPin } = useAuth();
   const { settings, updateSettings } = useElection();
   const { toast } = useToast();
   
@@ -53,11 +53,13 @@ const UserPinManagement = () => {
   const [roleChangeDialogOpen, setRoleChangeDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ id: string, name: string, email: string, currentRole: UserRole } | null>(null);
   const [newRole, setNewRole] = useState<UserRole>("staff");
+  const [isRoleKeyVerificationOpen, setIsRoleKeyVerificationOpen] = useState(false);
   
   // PIN assignment dialog states
   const [isPinAssignDialogOpen, setIsPinAssignDialogOpen] = useState(false);
   const [userForPinAssignment, setUserForPinAssignment] = useState<string | null>(null);
   const [selectedPinForAssignment, setSelectedPinForAssignment] = useState<string>("");
+  const [pinAssignmentError, setPinAssignmentError] = useState("");
   
   // PIN edit dialog states
   const [isPinEditDialogOpen, setIsPinEditDialogOpen] = useState(false);
@@ -144,6 +146,17 @@ const UserPinManagement = () => {
   };
 
   // Role management functions
+  const handleInitiateRoleChange = () => {
+    if (!selectedUser) return;
+    
+    // Only require security key verification for admin and superadmin roles
+    if (newRole === "admin" || newRole === "superadmin") {
+      setIsRoleKeyVerificationOpen(true);
+    } else {
+      handleRoleChange();
+    }
+  };
+  
   const handleRoleChange = async () => {
     if (!selectedUser) return;
     
@@ -154,8 +167,14 @@ const UserPinManagement = () => {
         description: `${selectedUser.name || selectedUser.email}'s role updated to ${newRole}`,
       });
       setRoleChangeDialogOpen(false);
+      setIsRoleKeyVerificationOpen(false);
     } catch (error) {
       console.error("Error updating role:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role",
+        variant: "destructive"
+      });
     }
   };
 
@@ -169,11 +188,18 @@ const UserPinManagement = () => {
   const openPinAssignmentDialog = (userId: string) => {
     setUserForPinAssignment(userId);
     setSelectedPinForAssignment("");
+    setPinAssignmentError("");
     setIsPinAssignDialogOpen(true);
   };
   
   const handleAssignPin = () => {
-    if (!userForPinAssignment || !selectedPinForAssignment) {
+    if (!userForPinAssignment) {
+      setPinAssignmentError("User ID is missing");
+      return;
+    }
+    
+    if (!selectedPinForAssignment) {
+      setPinAssignmentError("Please select a PIN to assign");
       toast({
         title: "Error",
         description: "Please select a PIN to assign",
@@ -182,6 +208,7 @@ const UserPinManagement = () => {
       return;
     }
     
+    setPinAssignmentError("");
     setPendingAction({
       type: 'assign',
       userId: userForPinAssignment,
@@ -240,7 +267,7 @@ const UserPinManagement = () => {
           const updatedUsers = [...authorizedUsers];
           for (let i = 0; i < updatedUsers.length; i++) {
             if (updatedUsers[i]?.assignedPinId === pendingAction.pinId) {
-              await updateUserPinAssignment(updatedUsers[i].id, null);
+              await updateUserWithPin(updatedUsers[i].id, null);
             }
           }
           
@@ -275,14 +302,14 @@ const UserPinManagement = () => {
             description: "PIN updated successfully"
           });
         } else if (pendingAction.type === 'assign' && pendingAction.userId && pendingAction.pinId) {
-          await updateUserPinAssignment(pendingAction.userId, pendingAction.pinId);
+          await updateUserWithPin(pendingAction.userId, pendingAction.pinId);
           
           toast({
             title: "Success",
             description: "PIN assigned to user successfully"
           });
         } else if (pendingAction.type === 'unassign' && pendingAction.userId) {
-          await updateUserPinAssignment(pendingAction.userId, null);
+          await updateUserWithPin(pendingAction.userId, null);
           
           toast({
             title: "Success",
@@ -300,43 +327,23 @@ const UserPinManagement = () => {
     } catch (error: any) {
       console.error("Error managing user or PIN:", error);
       setError(error.message || "Failed to perform the requested action");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to perform the requested action",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
       setIsKeyVerificationOpen(false);
     }
   };
   
-  const updateUserPinAssignment = async (userId: string, pinId: string | null) => {
-    // Find the user
-    const userIndex = authorizedUsers.findIndex(user => user.id === userId);
-    if (userIndex === -1) return;
-    
-    // Create updated user data with the assigned PIN
-    const updatedUserData = {
-      ...authorizedUsers[userIndex],
-      assignedPinId: pinId
-    };
-    
-    // Update the user in Firestore (this would be handled by the auth context)
-    // For now, let's assume we need to call a method like updateUserData
-    try {
-      // This function would need to be implemented in the AuthContext
-      await updateUserWithPin(userId, pinId);
-      
-      // Refresh the authorized users list
-      await fetchAuthorizedUsers();
-    } catch (error) {
-      console.error("Error updating user PIN assignment:", error);
-      throw error;
-    }
+  const handleRoleKeyVerificationSuccess = () => {
+    handleRoleChange();
   };
   
-  // This function would need to be implemented in the AuthContext
-  // For now, let's simulate it with a function that logs
-  const updateUserWithPin = async (userId: string, pinId: string | null) => {
-    console.log(`Updating user ${userId} with PIN ${pinId || 'null'}`);
-    // This would be implemented in the AuthContext to update Firestore
-    // For now, it's just a placeholder
+  const handleRoleKeyVerificationCancel = () => {
+    setIsRoleKeyVerificationOpen(false);
   };
   
   const handleKeyVerificationCancel = () => {
@@ -662,12 +669,17 @@ const UserPinManagement = () => {
                   <SelectItem value="superadmin">Super Admin</SelectItem>
                 </SelectContent>
               </Select>
+              {(newRole === "admin" || newRole === "superadmin") && (
+                <p className="text-sm text-amber-600">
+                  Note: Changing to {newRole} role will require security key verification.
+                </p>
+              )}
             </div>
           </div>
           
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRoleChange}>
+            <AlertDialogAction onClick={handleInitiateRoleChange}>
               Update Role
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -698,6 +710,9 @@ const UserPinManagement = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {pinAssignmentError && (
+                <p className="text-sm text-red-500 mt-2">{pinAssignmentError}</p>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -751,8 +766,16 @@ const UserPinManagement = () => {
         onSuccess={handleKeyVerificationSuccess}
         onCancel={handleKeyVerificationCancel}
       />
+
+      <SecurityKeyVerification
+        open={isRoleKeyVerificationOpen}
+        onOpenChange={setIsRoleKeyVerificationOpen}
+        onSuccess={handleRoleKeyVerificationSuccess}
+        onCancel={handleRoleKeyVerificationCancel}
+      />
     </div>
   );
 };
 
 export default UserPinManagement;
+
