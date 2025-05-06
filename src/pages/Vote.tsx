@@ -9,11 +9,14 @@ import { CheckCircle, Lock, Vote as VoteIcon } from "lucide-react";
 import Header from "@/components/Header";
 import { Candidate, Position, Vote as VoteType } from "@/types";
 import { useSecurityKey } from "@/contexts/SecurityKeyContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import NumericKeypad from "@/components/NumericKeypad";
 
 const Vote = () => {
   const { currentUser } = useAuth();
   const { candidates, positions, settings, submitVote } = useElection();
   const { clearSecurityKeySession } = useSecurityKey();
+  const isMobile = useIsMobile();
   const [enteredPin, setEnteredPin] = useState("");
   const [isPinCorrect, setIsPinCorrect] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState<Record<string, string>>({});
@@ -47,6 +50,14 @@ const Vote = () => {
     
     // If we get here, pin was invalid
     setPinError("Incorrect PIN. Please try again.");
+  };
+  
+  const handleKeyPress = (value: string) => {
+    setEnteredPin(prev => prev + value);
+  };
+
+  const handleClear = () => {
+    setEnteredPin("");
   };
   
   const selectCandidate = (positionId: string, candidateId: string) => {
@@ -208,6 +219,14 @@ const Vote = () => {
                 {pinError && (
                   <p className="text-red-500 text-sm mt-2 text-center">{pinError}</p>
                 )}
+                
+                {isMobile && (
+                  <NumericKeypad 
+                    onKeyPress={handleKeyPress}
+                    onClear={handleClear}
+                    onSubmit={handlePinSubmit}
+                  />
+                )}
               </CardContent>
               <CardFooter>
                 <Button 
@@ -321,8 +340,6 @@ const Vote = () => {
           </div>
         )}
       </main>
-      
-      {/* Footer is now handled by App.tsx, so we don't need to include it here */}
     </div>
   );
 };
