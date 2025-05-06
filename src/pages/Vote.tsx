@@ -21,11 +21,16 @@ const Vote = () => {
   const [loading, setLoading] = useState(false);
   const [pinError, setPinError] = useState("");
   
-  const isVotingActive = settings.isActive;
+  const isVotingActive = settings?.isActive || false;
 
   const handlePinSubmit = () => {
     // Clear any previous errors
     setPinError("");
+    
+    if (!settings) {
+      setPinError("Unable to verify PIN. Please try again later.");
+      return;
+    }
     
     // Check legacy pin first for backward compatibility
     if (enteredPin === settings.pinCode) {
@@ -127,8 +132,6 @@ const Vote = () => {
             </div>
           </div>
         </main>
-        
-        {/* Footer is now handled by App.tsx, so we don't need to include it here */}
       </div>
     );
   }
@@ -150,8 +153,6 @@ const Vote = () => {
             </div>
           </div>
         </main>
-        
-        {/* Footer is now handled by App.tsx, so we don't need to include it here */}
       </div>
     );
   }
@@ -171,7 +172,7 @@ const Vote = () => {
       <main className="container mx-auto py-8 px-4 flex-grow">
         <div className="flex flex-col items-center justify-center mb-6">
           <h1 className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-            {settings.title || "Student Activity Council Elections"}
+            {settings?.title || "Student Activity Council Elections"}
           </h1>
           
           <div className="flex items-center gap-2 mt-2 bg-blue-100 px-4 py-1 rounded-full">
@@ -220,10 +221,6 @@ const Vote = () => {
                 </Button>
               </CardFooter>
             </Card>
-            
-            <div className="text-center mt-6 text-sm text-gray-500">
-              SAC Elections powered by Fraser Votes
-            </div>
           </div>
         ) : (
           <div className="max-w-4xl mx-auto animate-fade-in">
@@ -314,15 +311,9 @@ const Vote = () => {
                 <li>Once submitted, you cannot change your vote</li>
               </ol>
             </Card>
-            
-            <div className="text-center my-6 text-sm text-gray-500">
-              SAC Elections powered by Fraser Votes
-            </div>
           </div>
         )}
       </main>
-      
-      {/* Footer is now handled by App.tsx, so we don't need to include it here */}
     </div>
   );
 };
