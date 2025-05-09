@@ -25,7 +25,7 @@ const Onboarding = () => {
     {
       title: "Poll Station",
       description: "Running a poll station? Please check in with Akshat, Aleena, or Cody for your secret pin. You'll have to enter this pin every time someone comes by to vote.",
-      image: "/lovable-uploads/096dcf9a-ca07-490a-ae5f-c19b1118f6cb.png"
+      image: "/lovable-uploads/82fd17d5-71fa-4488-a841-1fcf61e61713.png"
     },
     {
       title: "Having Issues?",
