@@ -100,20 +100,22 @@ const Onboarding = () => {
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-xl bg-white rounded-xl overflow-hidden shadow-2xl">
-        {/* Header Image */}
-        <div className="relative bg-gray-900 h-64 flex items-center justify-center">
+        {/* Header Image - Updated to fill the header container */}
+        <div className="relative bg-gray-900 h-64">
           <button 
             onClick={handleClose}
-            className="absolute top-4 right-4 text-gray-300 hover:text-white"
+            className="absolute top-4 right-4 text-gray-300 hover:text-white z-10"
             aria-label="Close onboarding"
           >
             <X size={24} />
           </button>
-          <img
-            src={steps[currentStep].image}
-            alt="FraserVotes"
-            className="w-auto h-32 object-contain"
-          />
+          <div className="absolute inset-0">
+            <img
+              src={steps[currentStep].image}
+              alt="FraserVotes"
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
         
         {/* Content */}
