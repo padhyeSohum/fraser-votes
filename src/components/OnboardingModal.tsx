@@ -11,15 +11,17 @@ const OnboardingModal: React.FC = () => {
 
   useEffect(() => {
     // Only check for onboarding status after user is authenticated
-    if (currentUser && showOnboarding) {
-      // Automatically navigate to onboarding page if needed
-      if (window.location.pathname !== '/onboarding') {
+    // Use a more performant approach with a single condition
+    if (currentUser && showOnboarding && window.location.pathname !== '/onboarding') {
+      // Use requestAnimationFrame for smoother navigation
+      requestAnimationFrame(() => {
         navigate('/onboarding');
-      }
+      });
     }
   }, [currentUser, showOnboarding, navigate]);
 
-  return null; // The component doesn't render anything as navigation is handled via useEffect
+  // Return null as this is a non-rendering component
+  return null;
 };
 
 export default OnboardingModal;

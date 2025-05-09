@@ -5,14 +5,19 @@ import App from './App.tsx'
 import './index.css'
 import './lib/firebase' // Initialize Firebase
 
-const rootElement = document.getElementById("root");
-
-if (!rootElement) {
-  console.error("Failed to find the root element");
-} else {
+// Function to create and render the root
+const renderApp = async () => {
+  const rootElement = document.getElementById("root");
+  
+  if (!rootElement) {
+    console.error("Failed to find the root element");
+    return;
+  }
+  
   try {
     const root = createRoot(rootElement);
     
+    // Render with strict mode
     root.render(
       <StrictMode>
         <App />
@@ -23,4 +28,15 @@ if (!rootElement) {
   } catch (error) {
     console.error("Error rendering the application:", error);
   }
+};
+
+// Use requestIdleCallback for non-critical initialization
+// This allows the browser to prioritize more important tasks first
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(() => {
+    renderApp();
+  });
+} else {
+  // Fallback for browsers that don't support requestIdleCallback
+  setTimeout(renderApp, 1);
 }

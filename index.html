@@ -9,6 +9,10 @@
     <meta name="description" content="School Election Voting Platform" />
     <meta name="author" content="FraserVotes" />
 
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" as="image" />
+    <link rel="preload" href="/src/main.tsx" as="script" />
+    
     <meta property="og:title" content="FraserVotes" />
     <meta property="og:description" content="FraserVotes" />
     <meta property="og:type" content="website" />
@@ -30,9 +34,12 @@
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png" />
     
-    <!-- Preload critical resources -->
+    <!-- Resource hints for faster loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://firebaseapp.com" crossorigin />
+    <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
+    <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com" />
 
     <style>
       /* Initial loading screen styles */
@@ -216,7 +223,7 @@
               initialLoader.style.display = 'none';
             }, 300); // Match this with the CSS transition duration
           }
-        }, 1000); // Adjust delay as needed for your app's load time
+        }, 500); // Reduced delay from 1000ms to 500ms for faster perceived loading
       });
     </script>
     <noscript>
