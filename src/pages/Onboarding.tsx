@@ -4,27 +4,33 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { useOnboarding } from '../contexts/OnboardingContext';
 
 const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
+  const { completeOnboarding } = useOnboarding();
   
   const steps = [
     {
       title: "Thank you for volunteering for SAC Elections 2025",
       description: "Here are a few important reminders",
+      image: "/lovable-uploads/5435862e-b127-467a-acf3-887926a8e0d5.png"
     },
     {
       title: "Check-In Desk",
       description: "If you're working the check-in desk, remember to check all ID. Students can present drivers licenses, student IDs, health cards - anything with a picture and their name.",
+      image: "/lovable-uploads/096dcf9a-ca07-490a-ae5f-c19b1118f6cb.png"
     },
     {
       title: "Poll Station",
       description: "Running a poll station? Please check in with Akshat, Aleena, or Cody for your secret pin. You'll have to enter this pin every time someone comes by to vote.",
+      image: "/lovable-uploads/096dcf9a-ca07-490a-ae5f-c19b1118f6cb.png"
     },
     {
       title: "Having Issues?",
       description: "If you have issues at any point, first try refreshing the page. Contact Akshat, Cody, or Aleena if you have further issues.",
+      image: "/lovable-uploads/096dcf9a-ca07-490a-ae5f-c19b1118f6cb.png"
     },
   ];
 
@@ -32,24 +38,21 @@ const Onboarding = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Save that onboarding is complete in localStorage
-      localStorage.setItem('onboardingComplete', 'true');
-      // Redirect to main page
+      // Save that onboarding is complete and redirect
+      completeOnboarding();
       navigate('/');
     }
   };
 
   const handleSkip = () => {
-    // Save that onboarding is complete in localStorage
-    localStorage.setItem('onboardingComplete', 'true');
-    // Redirect to main page
+    // Save that onboarding is complete and redirect
+    completeOnboarding();
     navigate('/');
   };
 
   const handleClose = () => {
-    // Save that onboarding is complete in localStorage
-    localStorage.setItem('onboardingComplete', 'true');
-    // Redirect to main page
+    // Save that onboarding is complete and redirect
+    completeOnboarding();
     navigate('/');
   };
 
@@ -66,9 +69,9 @@ const Onboarding = () => {
             <X size={24} />
           </button>
           <img
-            src="/lovable-uploads/096dcf9a-ca07-490a-ae5f-c19b1118f6cb.png"
-            alt="FraserVotes Logo"
-            className="w-32 h-32 object-contain"
+            src={steps[currentStep].image}
+            alt="FraserVotes"
+            className="w-auto h-32 object-contain"
           />
         </div>
         
