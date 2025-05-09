@@ -123,6 +123,7 @@ const Vote = () => {
   if (!isVotingActive) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
+        {/* Static header when voting is not active */}
         <Header />
         
         <main className="container mx-auto py-16 px-4 flex-grow">
@@ -143,7 +144,10 @@ const Vote = () => {
   if (hasVoted) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header />
+        {/* Auto-hiding header is still used when voting is active */}
+        <div className="relative">
+          <Header />
+        </div>
         
         <main className="container mx-auto py-16 px-4 flex-grow">
           <div className="max-w-lg mx-auto text-center">
@@ -163,7 +167,7 @@ const Vote = () => {
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
-      {/* Add header with hover area */}
+      {/* Auto-hiding header when voting is active */}
       <div className="relative">
         <Header />
         {/* Invisible hover area at the top of the page when header is hidden */}
