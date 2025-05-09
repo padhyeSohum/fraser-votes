@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../contexts/OnboardingContext';
 
@@ -8,16 +8,19 @@ const OnboardingModal: React.FC = () => {
   const { currentUser } = useAuth();
   const { showOnboarding } = useOnboarding();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    // Only navigate if both checks pass - this prevents unnecessary navigation
-    if (currentUser && showOnboarding && window.location.pathname !== '/onboarding') {
-      // Use immediate navigation but within a microtask to avoid blocking rendering
-      Promise.resolve().then(() => {
-        navigate('/onboarding');
-      });
+    // Only navigate if all conditions are met and prevent navigation loops
+    if (
+      currentUser && 
+      showOnboarding && 
+      location.pathname !== '/onboarding'
+    ) {
+      // Use immediate navigation without microtask to prevent rendering issues
+      navigate('/onboarding', { replace: true });
     }
-  }, [currentUser, showOnboarding, navigate]);
+  }, [currentUser, showOnboarding, navigate, location.pathname]);
 
   // Return null as this is a non-rendering component
   return null;

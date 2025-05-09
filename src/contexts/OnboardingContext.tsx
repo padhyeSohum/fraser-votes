@@ -4,7 +4,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 type OnboardingContextType = {
   showOnboarding: boolean;
   completeOnboarding: () => void;
-  resetOnboarding: () => void;
 };
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -24,14 +23,9 @@ export const OnboardingProvider = ({ children }: { children: React.ReactNode }) 
     localStorage.setItem('onboardingComplete', 'true');
     setShowOnboarding(false);
   };
-  
-  const resetOnboarding = () => {
-    localStorage.removeItem('onboardingComplete');
-    setShowOnboarding(true);
-  };
 
   return (
-    <OnboardingContext.Provider value={{ showOnboarding, completeOnboarding, resetOnboarding }}>
+    <OnboardingContext.Provider value={{ showOnboarding, completeOnboarding }}>
       {children}
     </OnboardingContext.Provider>
   );

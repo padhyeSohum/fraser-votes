@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ElectionProvider } from "./contexts/ElectionContext";
 import { SecurityKeyProvider } from "./contexts/SecurityKeyContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
+import OnboardingModal from "./components/OnboardingModal";
 import Footer from "./components/Footer";
 import LoadingScreen from "./components/LoadingScreen";
 
@@ -37,14 +38,6 @@ const ProtectedRoute = ({
   requireVote?: boolean
 }) => {
   const { currentUser, userData, loading, isAdmin, isSuperAdmin, canAccessCheckin, canAccessVote } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  
-  useEffect(() => {
-    // Check if onboarding has been completed
-    if (currentUser && !localStorage.getItem('onboardingComplete')) {
-      setShowOnboarding(true);
-    }
-  }, [currentUser]);
   
   if (loading) {
     return <LoadingScreen message="Checking authentication..." />;
@@ -52,10 +45,6 @@ const ProtectedRoute = ({
   
   if (!currentUser) {
     return <Navigate to="/login" />;
-  }
-  
-  if (showOnboarding) {
-    return <Navigate to="/onboarding" />;
   }
   
   if (requireSuperAdmin && !isSuperAdmin()) {
@@ -84,46 +73,49 @@ const App = () => (
         <AuthProvider>
           <ElectionProvider>
             <SecurityKeyProvider sessionDuration={60000}> {/* 1 minute session */}
-              <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
-                <Toaster />
-                <Sonner />
-                <div className="flex-grow">
-                  <Suspense fallback={<LoadingScreen />}>
-                    <Routes>
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/access-denied" element={<AccessDenied />} />
-                      <Route path="/onboarding" element={<Onboarding />} />
-                      
-                      <Route path="/" element={
-                        <ProtectedRoute>
-                          <Navigate to="/checkin" />
-                        </ProtectedRoute>
-                      } />
-                      
-                      <Route path="/admin" element={
-                        <ProtectedRoute requireAdmin={true}>
-                          <Admin />
-                        </ProtectedRoute>
-                      } />
-                      
-                      <Route path="/checkin" element={
-                        <ProtectedRoute requireCheckin={true}>
-                          <CheckIn />
-                        </ProtectedRoute>
-                      } />
-                      
-                      <Route path="/vote" element={
-                        <ProtectedRoute requireVote={true}>
-                          <Vote />
-                        </ProtectedRoute>
-                      } />
-                      
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
+              <OnboardingProvider>
+                <OnboardingModal />
+                <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
+                  <Toaster />
+                  <Sonner />
+                  <div className="flex-grow">
+                    <Suspense fallback={<LoadingScreen />}>
+                      <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/access-denied" element={<AccessDenied />} />
+                        <Route path="/onboarding" element={<Onboarding />} />
+                        
+                        <Route path="/" element={
+                          <ProtectedRoute>
+                            <Navigate to="/checkin" />
+                          </ProtectedRoute>
+                        } />
+                        
+                        <Route path="/admin" element={
+                          <ProtectedRoute requireAdmin={true}>
+                            <Admin />
+                          </ProtectedRoute>
+                        } />
+                        
+                        <Route path="/checkin" element={
+                          <ProtectedRoute requireCheckin={true}>
+                            <CheckIn />
+                          </ProtectedRoute>
+                        } />
+                        
+                        <Route path="/vote" element={
+                          <ProtectedRoute requireVote={true}>
+                            <Vote />
+                          </ProtectedRoute>
+                        } />
+                        
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Suspense>
+                  </div>
+                  <Footer />
                 </div>
-                <Footer />
-              </div>
+              </OnboardingProvider>
             </SecurityKeyProvider>
           </ElectionProvider>
         </AuthProvider>

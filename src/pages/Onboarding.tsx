@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { useOnboarding } from '../contexts/OnboardingContext';
 
 const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
   const { completeOnboarding } = useOnboarding();
   
@@ -34,27 +35,67 @@ const Onboarding = () => {
     },
   ];
 
+  // Ensure component is fully loaded before rendering
+  useEffect(() => {
+    // Preload images to prevent rendering issues
+    const preloadImages = async () => {
+      try {
+        const imagePromises = steps.map(step => {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = step.image;
+            img.onload = () => resolve(img);
+            img.onerror = (e) => reject(e);
+          });
+        });
+        
+        await Promise.all(imagePromises);
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Error preloading images:', error);
+        // Still mark as loaded even if images fail
+        setIsLoaded(true);
+      }
+    };
+    
+    preloadImages();
+  }, []);
+
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // Save that onboarding is complete and redirect
       completeOnboarding();
-      navigate('/');
+      navigate('/', { replace: true });
     }
   };
 
   const handleSkip = () => {
     // Save that onboarding is complete and redirect
     completeOnboarding();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   const handleClose = () => {
     // Save that onboarding is complete and redirect
     completeOnboarding();
-    navigate('/');
+    navigate('/', { replace: true });
   };
+
+  // Show loading state if not fully loaded
+  if (!isLoaded) {
+    return (
+      <div className="fixed inset-0 bg-white flex items-center justify-center z-50 p-4">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-black border-r-transparent" role="status">
+            <span className="sr-only">Loading...</span>
+          </div>
+          <p className="mt-4 text-lg font-medium">Loading onboarding...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
