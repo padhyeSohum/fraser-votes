@@ -4,10 +4,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ElectionProvider } from "./contexts/ElectionContext";
 import { SecurityKeyProvider } from "./contexts/SecurityKeyContext";
+import { OnboardingProvider } from "./contexts/OnboardingContext";
 import Footer from "./components/Footer";
 import LoadingScreen from "./components/LoadingScreen";
 
@@ -18,6 +19,7 @@ const CheckIn = lazy(() => import("./pages/CheckIn"));
 const Vote = lazy(() => import("./pages/Vote"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,14 @@ const ProtectedRoute = ({
   requireVote?: boolean
 }) => {
   const { currentUser, userData, loading, isAdmin, isSuperAdmin, canAccessCheckin, canAccessVote } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  
+  useEffect(() => {
+    // Check if onboarding has been completed
+    if (currentUser && !localStorage.getItem('onboardingComplete')) {
+      setShowOnboarding(true);
+    }
+  }, [currentUser]);
   
   if (loading) {
     return <LoadingScreen message="Checking authentication..." />;
@@ -42,6 +52,10 @@ const ProtectedRoute = ({
   
   if (!currentUser) {
     return <Navigate to="/login" />;
+  }
+  
+  if (showOnboarding) {
+    return <Navigate to="/onboarding" />;
   }
   
   if (requireSuperAdmin && !isSuperAdmin()) {
@@ -78,6 +92,7 @@ const App = () => (
                     <Routes>
                       <Route path="/login" element={<Login />} />
                       <Route path="/access-denied" element={<AccessDenied />} />
+                      <Route path="/onboarding" element={<Onboarding />} />
                       
                       <Route path="/" element={
                         <ProtectedRoute>
