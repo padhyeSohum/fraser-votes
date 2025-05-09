@@ -30,7 +30,7 @@ const Onboarding = () => {
     {
       title: "Having Issues?",
       description: "If you have issues at any point, first try refreshing the page. Contact Akshat, Cody, or Aleena if you have further issues.",
-      image: "/lovable-uploads/096dcf9a-ca07-490a-ae5f-c19b1118f6cb.png"
+      image: "/lovable-uploads/bb86d0d5-b24e-45ac-a9c4-a6206fb11482.png"
     },
   ];
 
