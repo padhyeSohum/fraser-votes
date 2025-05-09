@@ -20,7 +20,7 @@ const Onboarding = () => {
     {
       title: "Check-In Desk",
       description: "If you're working the check-in desk, remember to check all ID. Students can present drivers licenses, student IDs, health cards - anything with a picture and their name.",
-      image: "/lovable-uploads/096dcf9a-ca07-490a-ae5f-c19b1118f6cb.png"
+      image: "/lovable-uploads/2e28b657-77e3-45d8-be18-df2303e29f26.png"
     },
     {
       title: "Poll Station",
