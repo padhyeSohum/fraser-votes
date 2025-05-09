@@ -1,7 +1,8 @@
-// Cache name with version
-const CACHE_NAME = 'frasevotes-cache-v2';
 
-// Files to cache - expanded list with more assets
+// Cache name with version
+const CACHE_NAME = 'frasevotes-cache-v3';
+
+// Files to cache - expanded list with more essential assets
 const urlsToCache = [
   '/',
   '/index.html',
@@ -16,28 +17,57 @@ const urlsToCache = [
 
 // Install a service worker
 self.addEventListener('install', event => {
+  console.log('Service Worker installing...');
+  // Skip waiting to make new service worker activate immediately
+  self.skipWaiting();
+  
   // Perform install steps
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache');
+        console.log('Cache opened');
         return cache.addAll(urlsToCache);
-      })
-      .then(() => {
-        // Force the waiting service worker to become the active service worker
-        return self.skipWaiting();
       })
   );
 });
 
-// Cache and return requests with improved strategy
+// Cache and return requests with network-first strategy for HTML and CSS
+// and cache-first strategy for images and other assets
 self.addEventListener('fetch', event => {
-  // Check if this is a request for an image
-  if (event.request.destination === 'image') {
+  // Parse the URL to determine the appropriate caching strategy
+  const url = new URL(event.request.url);
+  const isHTMLRequest = event.request.destination === 'document' || url.pathname.endsWith('.html');
+  const isCSSRequest = event.request.destination === 'style' || url.pathname.endsWith('.css');
+  const isJSRequest = event.request.destination === 'script' || url.pathname.endsWith('.js');
+
+  // For HTML, CSS, and JS files, use a network-first approach
+  if (isHTMLRequest || isCSSRequest || isJSRequest) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Clone the response
+          const responseToCache = response.clone();
+          
+          // Update cache with fresh content
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+            
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try to serve from cache
+          return caches.match(event.request);
+        })
+    );
+  } 
+  // For images and other assets, use a cache-first approach
+  else if (event.request.destination === 'image' || event.request.destination === 'font') {
     event.respondWith(
       caches.match(event.request)
         .then(cachedResponse => {
-          // Return cached image first (if available)
+          // Return cached asset first if available
           if (cachedResponse) {
             return cachedResponse;
           }
@@ -45,13 +75,12 @@ self.addEventListener('fetch', event => {
           // Otherwise fetch image and cache it
           return fetch(event.request)
             .then(response => {
-              // Don't cache if not successful
-              if (!response || response.status !== 200 || response.type !== 'basic') {
+              if (!response || response.status !== 200) {
                 return response;
               }
               
               // Clone the response
-              var responseToCache = response.clone();
+              const responseToCache = response.clone();
               
               caches.open(CACHE_NAME)
                 .then(cache => {
@@ -62,8 +91,9 @@ self.addEventListener('fetch', event => {
             });
         })
     );
-  } else {
-    // For non-image requests, use network first, fallback to cache strategy
+  }
+  // For all other requests, simply fetch from network and fall back to cache
+  else {
     event.respondWith(
       fetch(event.request)
         .catch(() => {
@@ -75,6 +105,8 @@ self.addEventListener('fetch', event => {
 
 // Update service worker and clean old caches
 self.addEventListener('activate', event => {
+  console.log('Service Worker activating...');
+  
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -82,6 +114,7 @@ self.addEventListener('activate', event => {
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
             // Delete old cache versions
+            console.log('Deleting outdated cache:', cacheName);
             return caches.delete(cacheName);
           }
         })

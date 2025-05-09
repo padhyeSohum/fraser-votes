@@ -5,8 +5,8 @@ import App from './App.tsx'
 import './index.css'
 import './lib/firebase' // Initialize Firebase
 
-// Function to create and render the root
-const renderApp = async () => {
+// Function to create and render the root with improved error handling and performance
+const renderApp = () => {
   const rootElement = document.getElementById("root");
   
   if (!rootElement) {
@@ -24,19 +24,26 @@ const renderApp = async () => {
       </StrictMode>
     );
     
+    // Hide the initial loader once React has mounted
+    const initialLoader = document.getElementById('initial-loader');
+    if (initialLoader) {
+      initialLoader.style.opacity = '0';
+      setTimeout(() => {
+        initialLoader.style.display = 'none';
+      }, 300); // Match this with the CSS transition duration
+    }
+    
     console.log("Application successfully rendered");
   } catch (error) {
     console.error("Error rendering the application:", error);
+    // Show error message in the loading screen if rendering fails
+    const message = document.querySelector('#initial-loader .message');
+    if (message) {
+      message.textContent = "Error loading application. Please refresh the page.";
+    }
   }
 };
 
-// Use requestIdleCallback for non-critical initialization
-// This allows the browser to prioritize more important tasks first
-if ('requestIdleCallback' in window) {
-  requestIdleCallback(() => {
-    renderApp();
-  });
-} else {
-  // Fallback for browsers that don't support requestIdleCallback
-  setTimeout(renderApp, 1);
-}
+// Render as soon as possible - don't delay with requestIdleCallback
+// This improves perceived performance
+renderApp();

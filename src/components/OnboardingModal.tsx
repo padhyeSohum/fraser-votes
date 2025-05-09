@@ -10,11 +10,10 @@ const OnboardingModal: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only check for onboarding status after user is authenticated
-    // Use a more performant approach with a single condition
+    // Only navigate if both checks pass - this prevents unnecessary navigation
     if (currentUser && showOnboarding && window.location.pathname !== '/onboarding') {
-      // Use requestAnimationFrame for smoother navigation
-      requestAnimationFrame(() => {
+      // Use immediate navigation but within a microtask to avoid blocking rendering
+      Promise.resolve().then(() => {
         navigate('/onboarding');
       });
     }
