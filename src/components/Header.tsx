@@ -32,7 +32,7 @@ const Header = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2">
               <img
-                src="/lovable-uploads/e1d5445a-0979-44b4-87be-0540995d11bf.png"
+                src="/lovable-uploads/fa060889-8e8b-49b9-afa2-2c56adbc0497.png"
                 alt="FraserVotes Logo"
                 className="h-8 w-auto"
               />
