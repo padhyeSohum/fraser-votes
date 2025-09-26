@@ -38,8 +38,8 @@ const Admin = () => {
     updateSettings,
     startElection,
     endElection,
+    resetElection,
     getResults,
-    resetElection
   } = useElection();
   
   const [currentTab, setCurrentTab] = useState("candidates");
@@ -58,8 +58,6 @@ const Admin = () => {
   const [securityPassword, setSecurityPassword] = useState("");
   const [isSecurityPasswordDialogOpen, setIsSecurityPasswordDialogOpen] = useState(false);
   const [isSecurityTabVerified, setIsSecurityTabVerified] = useState(false);
-  const [isStartStopVerificationOpen, setIsStartStopVerificationOpen] = useState(false);
-  const [pendingElectionAction, setPendingElectionAction] = useState<'start' | 'stop' | null>(null);
   const { toast } = useToast();
   
   const [newPosition, setNewPosition] = useState<Omit<Position, "id">>({
@@ -213,8 +211,24 @@ const Admin = () => {
     });
   };
   
-  const handleFetchResults = async () => {
-    setIsKeyVerificationOpen(true);
+const handleFetchResults = async () => {
+    try {
+      const data = await getResults();
+      setResults(data);
+      setHasVerifiedResults(true);
+      
+      toast({
+        title: "Success",
+        description: "Results loaded successfully.",
+      });
+    } catch (error) {
+      console.error("Error fetching results:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load results.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleKeyVerificationSuccess = async () => {
@@ -271,30 +285,28 @@ const Admin = () => {
     }
   };
 
-  const handleElectionControl = (action: 'start' | 'stop') => {
-    setPendingElectionAction(action);
-    setIsStartStopVerificationOpen(true);
-  };
-
-  const handleElectionKeyVerificationSuccess = async () => {
-    if (pendingElectionAction === 'start') {
-      await startElection();
-    } else if (pendingElectionAction === 'stop') {
-      await endElection();
+  const handleElectionControl = async () => {
+    try {
+      if (settings.isActive) {
+        await endElection();
+        toast({
+          title: "Success",
+          description: "Election stopped successfully",
+        });
+      } else {
+        await startElection();
+        toast({
+          title: "Success",
+          description: "Election started successfully",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update election status",
+        variant: "destructive",
+      });
     }
-    
-    setIsStartStopVerificationOpen(false);
-    setPendingElectionAction(null);
-    
-    toast({
-      title: "Success",
-      description: `Election ${pendingElectionAction === 'start' ? 'started' : 'stopped'} successfully`,
-    });
-  };
-
-  const handleElectionKeyVerificationCancel = () => {
-    setIsStartStopVerificationOpen(false);
-    setPendingElectionAction(null);
   };
 
   const handleTabChange = (value: string) => {
@@ -330,51 +342,11 @@ const Admin = () => {
               <Button 
                 variant={settings.isActive ? "destructive" : "default"}
                 className="shadow-sm"
-                onClick={() => handleElectionControl(settings.isActive ? 'stop' : 'start')}
+                onClick={handleElectionControl}
               >
                 <Power className="h-4 w-4 mr-2" />
                 {settings.isActive ? 'End Voting' : 'Start Voting'}
               </Button>
-              
-              <SecurityKeyVerification
-                open={isStartStopVerificationOpen}
-                onOpenChange={setIsStartStopVerificationOpen}
-                onSuccess={handleElectionKeyVerificationSuccess}
-                onCancel={handleElectionKeyVerificationCancel}
-              />
-              
-              <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="shadow-sm">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Reset Election
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="sm:max-w-[425px]">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Reset Election Data</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action will remove all positions, candidates, and voting results. It will also reset all student check-ins.
-                      This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <div className="py-4">
-                    <Label htmlFor="reset-password">Enter Password</Label>
-                    <Input
-                      id="reset-password"
-                      type="password"
-                      value={resetPassword}
-                      onChange={(e) => setResetPassword(e.target.value)}
-                      placeholder="Enter the reset password"
-                      className="mt-2"
-                    />
-                  </div>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setResetPassword("")}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleReset}>Reset</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
             </div>
           </div>
 
