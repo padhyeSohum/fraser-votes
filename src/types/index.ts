@@ -32,6 +32,7 @@ export interface Candidate {
   photoURL?: string;
   description?: string;
   votes?: number;
+//   deleted?: boolean;
 }
 
 export interface Vote {

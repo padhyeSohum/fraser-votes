@@ -20,12 +20,13 @@ const Vote = () => {
   const [hasVoted, setHasVoted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pinError, setPinError] = useState("");
-  
+  const [userGrade, setUserGrade] = useState<number>(0);
+
   const isVotingActive = settings?.isActive || false;
 
   // Calculate if all positions have a selected candidate
   const allPositionsSelected = positions.length > 0 && 
-    positions.every(position => Boolean(selectedCandidates[position.id]));
+    [positions[userGrade]].every(position => Boolean(selectedCandidates[position.id]));
 
   const handlePinSubmit = () => {
     // Clear any previous errors
@@ -43,12 +44,23 @@ const Vote = () => {
     }
     
     // Then check the pins array
+    // if (settings.pins && settings.pins.length > 0) {
+    //   const validPin = settings.pins.find(
+    //     p => p.pin === enteredPin && p.isActive
+    //   );
+      
+    //   if (validPin) {
+    //     setIsPinCorrect(true);
+    //     return;
+    //   }
+    // }
     if (settings.pins && settings.pins.length > 0) {
-      const validPin = settings.pins.find(
+      const validPinIndex = settings.pins.findIndex(
         p => p.pin === enteredPin && p.isActive
       );
       
-      if (validPin) {
+      if (validPinIndex != -1) {
+        setUserGrade(validPinIndex);
         setIsPinCorrect(true);
         return;
       }
@@ -72,6 +84,8 @@ const Vote = () => {
     setHasVoted(false);
     setLoading(false);
     setPinError("");
+    setUserGrade(0);
+    
     // Also clear the security key session so the next user needs to re-verify if needed
     clearSecurityKeySession();
   };
@@ -235,12 +249,12 @@ const Vote = () => {
             <Card className="mb-8 shadow-lg overflow-hidden border-t-4 border-t-blue-500">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
                 <h2 className="text-xl font-bold text-gray-800">Cast Your Vote</h2>
-                <p className="text-sm text-gray-600">Select one candidate for each position</p>
+                <p className="text-sm text-gray-600">Select one candidate to be your grade's representative</p>
               </div>
               
               <CardContent className="p-6">
                 <div className="space-y-8">
-                  {positions.map((position) => (
+                  {[positions[userGrade]].map((position) => (
                     <div key={position.id} className="pb-6 last:pb-0 border-b last:border-b-0 border-gray-100">
                       <h2 className="text-lg font-bold mb-4 px-2 py-1 bg-blue-50 rounded-md text-blue-800 inline-block">
                         {position.title}
@@ -313,9 +327,9 @@ const Vote = () => {
             <Card className="bg-white p-6 rounded-lg shadow-md mb-6 border-t-4 border-t-blue-500">
               <h2 className="text-lg font-bold mb-3 text-gray-800">Voting Instructions</h2>
               <ol className="list-decimal pl-5 space-y-2 text-gray-700">
-                <li>You must select one candidate for each position</li>
+                <li>You must select one candidate</li>
                 <li>Click on a candidate's card to select them</li>
-                <li>Review your choices carefully before submitting</li>
+                <li>Review your choice carefully before submitting</li>
                 <li>Once submitted, you cannot change your vote</li>
               </ol>
             </Card>

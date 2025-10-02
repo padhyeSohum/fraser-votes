@@ -12,7 +12,8 @@ import {
   onSnapshot,
   Timestamp,
   serverTimestamp,
-  increment
+  increment,
+  deleteDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
@@ -295,6 +296,7 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const removeCandidate = async (id: string) => {
+    // console.log(`Attempting to remove candidate with ID ${id}`);
     try {
       if (offlineMode) {
         const updatedCandidates = candidates.filter(c => c.id !== id);
@@ -309,10 +311,11 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       const candidateRef = doc(db, "candidates", id);
-      await updateDoc(candidateRef, {
-        deleted: true,
-        deletedAt: serverTimestamp()
-      });
+      await deleteDoc(candidateRef);
+    //   await updateDoc(candidateRef, {
+    //     deleted: true,
+    //     deletedAt: serverTimestamp()
+    //   });
       
       toast({
         title: "Success",
@@ -465,10 +468,11 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       const positionRef = doc(db, "positions", id);
-      await updateDoc(positionRef, {
-        deleted: true,
-        deletedAt: serverTimestamp()
-      });
+    //   await updateDoc(positionRef, {
+    //     deleted: true,
+    //     deletedAt: serverTimestamp()
+    //   });
+    await deleteDoc(positionRef);
       
       toast({
         title: "Success",

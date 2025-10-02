@@ -574,12 +574,19 @@ const handleFetchResults = async () => {
                         </div>
                       </CardHeader>
                       <CardContent className="p-6">
-                        {positionCandidates.length === 0 ? (
+                        {positionCandidates
+                            // .filter(candidate => !candidate.deleted)
+                            .length === 0 ? (
                           <p className="text-gray-500 text-center">No candidates for this position yet.</p>
                         ) : (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {positionCandidates.map((candidate) => (
-                              <div key={candidate.id} className="p-4 border rounded-lg flex items-start space-x-4">
+                            {positionCandidates
+                                .map((candidate) => (
+                              <div 
+                                key={candidate.id} 
+                                className="p-4 border rounded-lg flex items-start space-x-4"
+                                // style={{ display: candidate.deleted ? "hidden" : "" }}
+                              >
                                 <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                                   {candidate.photoURL ? (
                                     <img 
