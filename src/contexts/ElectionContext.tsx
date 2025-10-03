@@ -114,36 +114,6 @@ export const ElectionProvider: React.FC<{ children: React.ReactNode }> = ({
         pinCode: "1234", // Default pin
         title: "School Election",
         allowMultipleVotes: false,
-        pins: [
-            {
-                id: "gr9L",
-                name: "gr9L",
-                pin: "205009",
-                isActive: true,
-                createdAt: Date.now(),
-            },
-            {
-                id: "gr10L",
-                name: "gr10L",
-                pin: "205100",
-                isActive: true,
-                createdAt: Date.now(),
-            },
-            {
-                id: "gr11L",
-                name: "gr11L",
-                pin: "205101",
-                isActive: true,
-                createdAt: Date.now(),
-            },
-            {
-                id: "gr12L",
-                name: "gr12L",
-                pin: "205102",
-                isActive: true,
-                createdAt: Date.now(),
-            },
-        ],
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
