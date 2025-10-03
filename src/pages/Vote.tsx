@@ -29,36 +29,6 @@ const Vote = () => {
     const [loading, setLoading] = useState(false);
     const [pinError, setPinError] = useState("");
     const [userGrade, setUserGrade] = useState<number>(0);
-    settings.pins = [
-        {
-            id: "gr93",
-            name: "gr93",
-            pin: "235039",
-            isActive: true,
-            createdAt: Date.now(),
-        },
-        {
-            id: "gr103",
-            name: "gr103",
-            pin: "235130",
-            isActive: true,
-            createdAt: Date.now(),
-        },
-        {
-            id: "gr113",
-            name: "gr11L",
-            pin: "235131",
-            isActive: true,
-            createdAt: Date.now(),
-        },
-        {
-            id: "gr123",
-            name: "gr123",
-            pin: "235132",
-            isActive: true,
-            createdAt: Date.now(),
-        },
-    ];
 
     const isVotingActive = settings?.isActive || false;
 
